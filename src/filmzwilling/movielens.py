@@ -264,7 +264,8 @@ def read_ratings_csv(path: Path) -> pd.DataFrame:
             column_types={"userId": pa.int32(), "movieId": pa.int32(), "rating": pa.float32()},
         ),
     )
-    return table.to_pandas()
+    df: pd.DataFrame = table.to_pandas()
+    return df
 
 
 def read_movies_csv(path: Path) -> pd.DataFrame:
@@ -275,7 +276,7 @@ def read_movies_csv(path: Path) -> pd.DataFrame:
             column_types={"movieId": pa.int32(), "title": pa.string(), "genres": pa.string()},
         ),
     )
-    df = table.to_pandas()
+    df: pd.DataFrame = table.to_pandas()
     df["title"] = df["title"].fillna("").astype(str)
     df["genres"] = df["genres"].fillna("").astype(str)
     return df
@@ -290,7 +291,7 @@ def read_links_csv(path: Path) -> pd.DataFrame:
             column_types={"movieId": pa.int32(), "imdbId": pa.int32(), "tmdbId": pa.int32()},
         ),
     )
-    df = table.to_pandas(types_mapper={pa.int32(): pd.Int32Dtype()}.get)
+    df: pd.DataFrame = table.to_pandas(types_mapper={pa.int32(): pd.Int32Dtype()}.get)
     df["movieId"] = df["movieId"].astype(np.int32)
     return df
 
@@ -375,7 +376,9 @@ def build_processed(
     if len(row) and np.all(row[1:] >= row[:-1]):
         indptr = np.zeros(n_users + 1, dtype=np.int64)
         np.cumsum(user_counts, out=indptr[1:])
-        matrix = sparse.csr_matrix((centered, col, indptr), shape=(n_users, n_movies))
+        matrix: sparse.csr_matrix = sparse.csr_matrix(
+            (centered, col, indptr), shape=(n_users, n_movies)
+        )
         if not matrix.has_sorted_indices:
             matrix.sort_indices()
     else:
@@ -513,7 +516,8 @@ def process_movielens(
 def load_processed(processed_dir: Path) -> ProcessedData:
     processed_dir = Path(processed_dir)
     meta = json.loads((processed_dir / "meta.json").read_text(encoding="utf-8"))
-    matrix = sparse.load_npz(processed_dir / "matrix.npz").tocsr()
+    loaded = sparse.load_npz(processed_dir / "matrix.npz")
+    matrix = loaded if isinstance(loaded, sparse.csr_matrix) else sparse.csr_matrix(loaded)
     with np.load(processed_dir / "index.npz") as index:
         user_ids = index["user_ids"].astype(np.int32)
         movie_ids = index["movie_ids"].astype(np.int32)

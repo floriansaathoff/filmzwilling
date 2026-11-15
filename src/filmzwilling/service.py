@@ -8,7 +8,8 @@ import math
 import re
 import threading
 import time
-from collections.abc import Iterable
+from collections import OrderedDict
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from pathlib import Path
@@ -132,6 +133,8 @@ class FilmService:
         self._items_cache: list[RecItem] | None = None
         self._title_index: tuple[list[str], list[int]] | None = None
         self.last_error: str | None = None
+        self._action_lock = threading.RLock()
+        self._done_client_ids: OrderedDict[str, None] = OrderedDict()
 
     # --- infrastructure -------------------------------------------------------------------
     def data(self) -> ProcessedData | None:
@@ -269,6 +272,24 @@ class FilmService:
         self.repo.set_rating(film_id, validate_note(score), log_action=from_queue)
         return self.maybe_recompute_in_background()
 
+    DUPLICATE: Any = object()
+
+    def run_action(self, client_id: str | None, action: Callable[[], Any]) -> Any:
+        """Run a queue action once per client id (the browser may resend it after a page close).
+
+        Actions are serialised, so a rating and a following undo never overtake each other.
+        Returns `FilmService.DUPLICATE` if the client id was already processed.
+        """
+        with self._action_lock:
+            if client_id and client_id in self._done_client_ids:
+                return self.DUPLICATE
+            result = action()
+            if client_id:
+                self._done_client_ids[client_id] = None
+                while len(self._done_client_ids) > 5000:
+                    self._done_client_ids.popitem(last=False)
+            return result
+
     def not_seen(self, film_id: int) -> None:
         self.repo.mark_not_seen(film_id)
 
@@ -346,7 +367,7 @@ class FilmService:
         top = list(
             zip(twins.user_indices[:20], twins.similarities[:20], twins.overlaps[:20], strict=True)
         )
-        film_ids = []
+        film_ids: list[int] = []
         details: list[tuple[int, float, int, list[tuple[int, float, float]]]] = []
         for user, sim, overlap in top:
             start, end = data.matrix.indptr[user], data.matrix.indptr[user + 1]
@@ -725,7 +746,8 @@ class FilmService:
                 stats.unmatched,
                 stats.series,
             )
-            film_ids = self.repo.film_ids_for_tmdb(e.tmdb_id for e in self.repo.events_with_films())
+            tmdb_ids = [e.tmdb_id for e in self.repo.events_with_films() if e.tmdb_id is not None]
+            film_ids = self.repo.film_ids_for_tmdb(tmdb_ids)
             asyncio.run(self.sync_metadata(film_ids.values()))
         else:
             report.notes.append(

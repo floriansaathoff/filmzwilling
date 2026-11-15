@@ -1,7 +1,7 @@
 // Small fetch helpers shared by the page scripts.
 
-export async function api(method, url, body) {
-  const options = { method, headers: { Accept: "application/json" } };
+export async function api(method, url, body, { keepalive = false } = {}) {
+  const options = { method, headers: { Accept: "application/json" }, keepalive };
   if (body !== undefined) {
     options.headers["Content-Type"] = "application/json";
     options.body = JSON.stringify(body);
@@ -21,7 +21,7 @@ export async function api(method, url, body) {
 }
 
 export const getJSON = (url) => api("GET", url);
-export const postJSON = (url, body = {}) => api("POST", url, body);
+export const postJSON = (url, body = {}, options = {}) => api("POST", url, body, options);
 export const putJSON = (url, body) => api("PUT", url, body);
 export const deleteJSON = (url) => api("DELETE", url);
 

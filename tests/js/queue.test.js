@@ -171,3 +171,14 @@ test("empty queue gives null current", async () => {
   assert.equal(s.current, null);
   assert.equal(s.act("rate", { score: 1 }), null);
 });
+
+test("pending lists unconfirmed requests in order without removing them", async () => {
+  const timers = manualTimers();
+  const q = new RetryQueue({ send: async () => false, schedule: timers.schedule });
+  q.enqueue({ type: "rate", body: { film_id: 1 } });
+  q.enqueue({ type: "undo", body: {} });
+  await tick();
+  assert.deepEqual(q.pending.map((r) => r.type), ["rate", "undo"]);
+  q.pending.pop();
+  assert.equal(q.size, 2);
+});

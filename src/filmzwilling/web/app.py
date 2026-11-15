@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import io
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
-from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi import Body, FastAPI, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -39,12 +39,29 @@ Score = Annotated[int, Field(strict=True, ge=0, le=10)]
 
 class FilmIn(BaseModel):
     film_id: int
+    client_id: str | None = None
 
 
 class RateIn(BaseModel):
     film_id: int
     score: Score
     context: str = "queue"
+    client_id: str | None = None
+
+
+class UndoIn(BaseModel):
+    client_id: str | None = None
+
+
+class ActionIn(BaseModel):
+    type: Literal["rate", "not_seen", "later", "undo"]
+    film_id: int | None = None
+    score: Score | None = None
+    client_id: str | None = None
+
+
+class ActionsIn(BaseModel):
+    actions: Annotated[list[ActionIn], Field(max_length=500)]
 
 
 class ScoreIn(BaseModel):
@@ -176,40 +193,90 @@ def create_app(service: FilmService) -> FastAPI:
     def progress() -> dict[str, int]:
         return service.progress().as_dict()
 
+    def _progress() -> dict[str, int]:
+        return service.progress().as_dict()
+
     @app.post("/api/rate")
     def rate(body: RateIn) -> dict[str, Any]:
+        from_queue = body.context == "queue"
         try:
-            started = service.rate(body.film_id, body.score, from_queue=body.context == "queue")
+            outcome = service.run_action(
+                body.client_id,
+                lambda: service.rate(body.film_id, body.score, from_queue=from_queue),
+            )
         except KeyError as exc:
             raise not_found() from exc
-        return {"ok": True, "progress": service.progress().as_dict(), "recompute_started": started}
+        duplicate = outcome is service.DUPLICATE
+        return {
+            "ok": True,
+            "duplicate": duplicate,
+            "progress": _progress(),
+            "recompute_started": False if duplicate else bool(outcome),
+        }
 
-    def _simple_action(action: Any, film_id: int) -> dict[str, Any]:
+    def _simple_action(action: Any, body: FilmIn) -> dict[str, Any]:
         try:
-            action(film_id)
+            outcome = service.run_action(body.client_id, lambda: action(body.film_id))
         except KeyError as exc:
             raise not_found() from exc
-        return {"ok": True, "progress": service.progress().as_dict()}
+        return {"ok": True, "duplicate": outcome is service.DUPLICATE, "progress": _progress()}
 
     @app.post("/api/not-seen")
     def not_seen(body: FilmIn) -> dict[str, Any]:
-        return _simple_action(service.not_seen, body.film_id)
+        return _simple_action(service.not_seen, body)
 
     @app.post("/api/later")
     def later(body: FilmIn) -> dict[str, Any]:
-        return _simple_action(service.later, body.film_id)
+        return _simple_action(service.later, body)
 
     @app.post("/api/not-interested")
     def not_interested(body: FilmIn) -> dict[str, Any]:
-        return _simple_action(service.not_interested, body.film_id)
+        return _simple_action(service.not_interested, body)
 
     @app.post("/api/undo")
-    def undo() -> dict[str, Any]:
-        undone = service.undo()
+    def undo(body: Annotated[UndoIn | None, Body()] = None) -> dict[str, Any]:
+        client_id = body.client_id if body else None
+        undone = service.run_action(client_id, service.undo)
+        if undone is service.DUPLICATE:
+            return {"undone": None, "item": None, "duplicate": True, "progress": _progress()}
         if undone is None:
             raise HTTPException(status_code=404, detail="Nichts zum Rückgängigmachen")
         item = undone.pop("item")
-        return {"undone": undone, "item": item, "progress": service.progress().as_dict()}
+        return {"undone": undone, "item": item, "progress": _progress()}
+
+    @app.post("/api/actions")
+    def actions(body: ActionsIn) -> dict[str, Any]:
+        """Several queue actions in order (used by the page when it is closed or hidden)."""
+        results: list[dict[str, Any]] = []
+        for action in body.actions:
+
+            def run(a: ActionIn = action) -> Any:
+                if a.type == "undo":
+                    return service.undo()
+                if a.film_id is None:
+                    raise KeyError("film_id")
+                if a.type == "rate":
+                    if a.score is None:
+                        raise ValueError("score fehlt")
+                    return service.rate(a.film_id, a.score)
+                if a.type == "not_seen":
+                    return service.not_seen(a.film_id)
+                return service.later(a.film_id)
+
+            try:
+                outcome = service.run_action(action.client_id, run)
+            except (KeyError, ValueError) as exc:
+                results.append({"type": action.type, "ok": False, "error": str(exc)})
+                continue
+            if outcome is service.DUPLICATE:
+                results.append({"type": action.type, "ok": True, "duplicate": True})
+            elif action.type == "undo" and outcome is None:
+                results.append(
+                    {"type": "undo", "ok": False, "error": "Nichts zum Rückgängigmachen"}
+                )
+            else:
+                results.append({"type": action.type, "ok": True})
+        return {"results": results, "progress": _progress()}
 
     # --- recommendations ------------------------------------------------------------------
     @app.get("/api/recommendations")

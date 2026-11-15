@@ -147,7 +147,8 @@ def tmdb_sync(
         raise _fail(str(exc)) from exc
     typer.echo(f"Anbieterliste: {result['providers']} Anbieter für Deutschland.")
     typer.echo(
-        f"Importtitel: {result['matched']} zugeordnet, {result['unmatched']} unklar (Seite „Zuordnung“), "
+        f"Importtitel: {result['matched']} zugeordnet, {result['unmatched']} unklar (Seite "
+        "„Zuordnung“), "
         f"{result['series']} als Serie verworfen."
     )
     typer.echo(f"Metadaten: {result['metadata']} Filme der Warteschlange aktualisiert.")
@@ -246,7 +247,8 @@ def import_inspect(
             typer.echo("  " + "; ".join(f"{k}={v}" for k, v in record.items() if k != "__kind__"))
     if not report.mapping.title:
         typer.echo(
-            "Keine Titel-Spalte erkannt: lege eine TOML-Datei an und nutze --mapping (siehe README)."
+            "Keine Titel-Spalte erkannt: lege eine TOML-Datei an und nutze --mapping (siehe "
+            "README)."
         )
 
 
@@ -273,8 +275,7 @@ def _start(service: FilmService, host: str, port: int, open_browser: bool, facto
     typer.echo(f"Filmzwilling läuft auf {url}")
     if host in ("0.0.0.0", "::"):
         typer.echo(
-            "Im WLAN erreichbar über die IP-Adresse dieses Rechners, z. B. http://192.168.x.y:%d/"
-            % port
+            f"Im WLAN erreichbar über die IP-Adresse dieses Rechners, z. B. http://192.168.x.y:{port}/"
         )
     if open_browser:
         threading.Timer(1.0, lambda: webbrowser.open(url)).start()
@@ -324,11 +325,13 @@ def evaluate(data_dir: DataDirOption = None) -> None:
         raise _fail(str(exc)) from exc
     typer.echo(f"Selbsttest: 5-fache Kreuzvalidierung über {result.n_ratings} eigene Bewertungen")
     typer.echo(
-        f"  RMSE:     {_de(result.rmse, 2)}  (Baseline Filmdurchschnitt: {_de(result.baseline_rmse, 2)}, "
+        f"  RMSE:     {_de(result.rmse, 2)}  (Baseline Filmdurchschnitt: "
+        f"{_de(result.baseline_rmse, 2)}, "
         f"{_de(result.improvement * 100, 0)} % besser)"
     )
     typer.echo(
-        f"  Spearman: {_de(result.spearman, 2)}  (Baseline Filmdurchschnitt: {_de(result.baseline_spearman, 2)})"
+        f"  Spearman: {_de(result.spearman, 2)}  (Baseline Filmdurchschnitt: "
+        f"{_de(result.baseline_spearman, 2)})"
     )
     typer.echo(f"  Abdeckung durch Zwillinge: {_de(result.coverage * 100, 0)} %")
 
@@ -358,7 +361,8 @@ def check(
     )
     typer.echo(f"  Bewertungen: {_thousands(result.rating_count or 0)}{mean}")
     typer.echo(
-        f"  Popularitätsrang: {_thousands(result.popularity_rank or 0)} von {_thousands(result.total_movies or 0)}"
+        f"  Popularitätsrang: {_thousands(result.popularity_rank or 0)} von "
+        f"{_thousands(result.total_movies or 0)}"
     )
     if result.queue_position is not None:
         typer.echo(f"  Warteschlange: Platz {result.queue_position} von {result.queue_size}")

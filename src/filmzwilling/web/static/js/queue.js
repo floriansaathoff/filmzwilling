@@ -26,6 +26,8 @@ export class RetryQueue {
   }
 
   get size() { return this._items.length; }
+  /** Copy of the requests that are not confirmed yet (oldest first). */
+  get pending() { return this._items.slice(); }
   get failures() { return this._failures; }
   get lastError() { return this._lastError; }
 

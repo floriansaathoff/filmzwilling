@@ -24,10 +24,22 @@ try {
   await page.waitForFunction((t) => document.querySelector("#film-title").textContent === t, second);
   await page.keyboard.press("Backspace");
   await page.waitForFunction((t) => document.querySelector("#film-title").textContent === t, first);
-  // Typing digits in the search field of another page must not rate anything.
+  // Leave the page right away: pending actions are flushed in order (beacon + client ids).
   await page.goto(base + "/bewertungen");
+  const progressNow = async () => (await fetch(base + "/api/progress")).json();
+  let progress = await progressNow();
+  for (let i = 0; i < 50 && (progress.rated !== 0 || progress.not_seen !== 0); i++) {
+    await new Promise((r) => setTimeout(r, 100));
+    progress = await progressNow();
+  }
+  if (progress.rated !== 0 || progress.not_seen !== 0) {
+    throw new Error("undo after leaving the page was lost: " + JSON.stringify(progress));
+  }
+  // Typing digits in the search field of another page must not rate anything.
   await page.fill("#rating-search", "123");
-  const progress = await (await fetch(base + "/api/progress")).json();
+  await page.keyboard.press("5");
+  await new Promise((r) => setTimeout(r, 300));
+  progress = await progressNow();
   if (progress.rated !== 0) throw new Error("typing in an input rated a film: " + JSON.stringify(progress));
   if (errors.length) throw new Error("page errors: " + errors.join("; "));
   console.log(JSON.stringify({ ok: true, switchMs }));

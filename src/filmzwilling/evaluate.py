@@ -8,7 +8,6 @@ from typing import Any
 
 import numpy as np
 from numpy.typing import NDArray
-
 from scipy.stats import spearmanr
 
 from filmzwilling.config import RecommenderConfig

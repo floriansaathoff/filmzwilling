@@ -90,35 +90,42 @@ def prepare_demo(
 
     rng = np.random.default_rng(seed)
     data = service.require_data()
-    for row in data.movies.itertuples():
-        tmdb = row.tmdbId
-        if tmdb is None or str(tmdb) == "<NA>":
+    movies = data.movies
+    tmdb_ids = movies["tmdbId"].astype("Float64").to_numpy(dtype=np.float64, na_value=np.nan)
+    titles = [str(t) for t in movies["title"]]
+    genre_lists = [[str(g) for g in genres] for genres in movies["genres"]]
+    counts = movies["count"].to_numpy(dtype=np.float64)
+    for i, title in enumerate(titles):
+        if np.isnan(tmdb_ids[i]):
             continue
-        _, year = parse_ml_title(str(row.title))
+        _, year = parse_ml_title(title)
         details = MovieDetails(
-            tmdb_id=int(tmdb),
-            title=clean_ml_title(str(row.title)),
-            original_title=clean_ml_title(str(row.title)),
+            tmdb_id=int(tmdb_ids[i]),
+            title=clean_ml_title(title),
+            original_title=clean_ml_title(title),
             runtime=int(rng.integers(78, 175)),
-            genres=german_genres(list(row.genres)) or ["Drama"],
+            genres=german_genres(genre_lists[i]) or ["Drama"],
             poster_path=None,
             vote_average=round(float(rng.uniform(5.0, 8.6)), 1),
             vote_count=int(rng.integers(100, 20000)),
             release_date=f"{year or 2000}-06-01",
-            popularity=float(row.count),
+            popularity=float(counts[i]),
             offers=_offers(rng),
         )
         film_id = repo.upsert_tmdb_details(details)
         repo.set_film_offers(film_id, details.offers or [])
 
     # A few imported titles so that the hint chips and the profile logic can be seen.
-    films = data.movies[data.movies["tmdbId"].notna()].sort_values("popularity_rank")
-    picks = films.iloc[[3, 8, 14, 21, 30, 42, 55, 70]]
+    ranks = movies["popularity_rank"].to_numpy()
+    by_popularity = [int(i) for i in np.argsort(ranks, kind="stable") if not np.isnan(tmdb_ids[i])]
+    picks = [by_popularity[k] for k in (3, 8, 14, 21, 30, 42, 55, 70)]
     base = datetime(2024, 5, 1, 20, 0)
     fractions = (1.0, 0.95, 0.3, 0.7, 1.0, 0.2, 1.0, 0.9)
-    for i, (row, fraction) in enumerate(zip(picks.itertuples(), fractions, strict=True)):
-        film_id = repo.film_id_for_tmdb(int(row.tmdbId))
-        film = repo.get_film(film_id) if film_id else None
+    movie_ids = movies["movieId"].to_numpy()
+    for i, (col, fraction) in enumerate(zip(picks, fractions, strict=True)):
+        tmdb_id = int(tmdb_ids[col])
+        found = repo.film_id_for_tmdb(tmdb_id)
+        film = repo.get_film(found) if found is not None else None
         runtime = (film.runtime if film else None) or 100
         profile = "Florian" if i < 6 else "Kinder"
         seconds = int(runtime * 60 * fraction)
@@ -126,15 +133,15 @@ def prepare_demo(
             WatchEvent(
                 source="demo",
                 profile=profile,
-                raw_title=clean_ml_title(str(row.title)),
+                raw_title=clean_ml_title(titles[col]),
                 first_seen=base - timedelta(days=10 * i),
                 last_seen=base - timedelta(days=10 * i),
                 total_watch_seconds=seconds,
                 max_position_seconds=seconds,
                 sessions=1 + i % 2,
                 hints={"netflix_thumbs": "up"} if i == 1 else {},
-                tmdb_id=int(row.tmdbId),
-                movielens_id=int(row.movieId),
+                tmdb_id=tmdb_id,
+                movielens_id=int(movie_ids[col]),
             )
         )
     repo.upsert_watch_event(

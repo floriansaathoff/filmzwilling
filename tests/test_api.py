@@ -352,3 +352,56 @@ def test_static_files(client: TestClient) -> None:
         r = client.get(path)
         assert r.status_code == 200, path
     assert "javascript" in client.get("/static/js/keys.js").headers["content-type"]
+
+
+def test_client_ids_make_actions_idempotent(client: TestClient) -> None:
+    items = client.get("/api/queue").json()["items"]
+    a, b = items[0]["film_id"], items[1]["film_id"]
+    first = client.post("/api/rate", json={"film_id": a, "score": 8, "client_id": "c1"})
+    assert first.json()["duplicate"] is False
+    again = client.post("/api/rate", json={"film_id": a, "score": 8, "client_id": "c1"})
+    assert again.json()["duplicate"] is True
+    client.post("/api/not-seen", json={"film_id": b, "client_id": "c2"})
+    client.post("/api/not-seen", json={"film_id": b, "client_id": "c2"})
+    assert (
+        client.post("/api/undo", json={"client_id": "u1"}).json()["undone"]["action"] == "not_seen"
+    )
+    assert client.post("/api/undo", json={"client_id": "u1"}).json()["duplicate"] is True
+    progress = client.get("/api/progress").json()
+    assert (progress["rated"], progress["not_seen"]) == (1, 0)
+
+
+def test_actions_batch_in_order(client: TestClient) -> None:
+    items = client.get("/api/queue").json()["items"]
+    a, b, c = (i["film_id"] for i in items[:3])
+    client.post("/api/rate", json={"film_id": a, "score": 4, "client_id": "x1"})
+    body = {
+        "actions": [
+            {"type": "rate", "film_id": a, "score": 4, "client_id": "x1"},  # already processed
+            {"type": "not_seen", "film_id": b, "client_id": "x2"},
+            {"type": "later", "film_id": c, "client_id": "x3"},
+            {"type": "undo", "client_id": "x4"},
+            {"type": "undo", "client_id": "x5"},
+            {"type": "rate", "film_id": 10**9, "score": 3, "client_id": "x6"},
+            {"type": "not_seen", "client_id": "x7"},
+            {"type": "rate", "film_id": a, "client_id": "x8"},
+        ]
+    }
+    r = client.post("/api/actions", json=body)
+    assert r.status_code == 200
+    results = r.json()["results"]
+    assert results[0] == {"type": "rate", "ok": True, "duplicate": True}
+    assert [x["ok"] for x in results[1:5]] == [True, True, True, True]
+    assert [x["ok"] for x in results[5:]] == [False, False, False]
+    progress = r.json()["progress"]
+    assert (progress["rated"], progress["not_seen"]) == (1, 0)
+    assert (
+        client.post(
+            "/api/actions", json={"actions": [{"type": "rate", "film_id": a, "score": 11}]}
+        ).status_code
+        == 422
+    )
+    empty_undo = TestClient(client.app).post(
+        "/api/actions", json={"actions": [{"type": "undo"}] * 3}
+    )
+    assert empty_undo.json()["results"][-1]["ok"] is False

@@ -33,9 +33,14 @@ const session = new RatingSession({
 
 let progress = { rated: 0, not_seen: 0, remaining: 0, total: 0 };
 
+const URLS = { rate: "/api/rate", not_seen: "/api/not-seen", later: "/api/later", undo: "/api/undo" };
+const newId = () =>
+  (globalThis.crypto && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+
 const queue = new RetryQueue({
   send: async (request) => {
-    const data = await postJSON(request.url, request.body);
+    // keepalive lets an in-flight request finish even if the page is closed meanwhile.
+    const data = await postJSON(URLS[request.type], request.body, { keepalive: true });
     if (data && data.progress && queue.size <= 1) setProgress(data.progress);
     if (data && data.recompute_started) toast("Empfehlungen werden im Hintergrund neu berechnet …");
     return true;
@@ -104,9 +109,9 @@ function act(type, score) {
   if (!record) return;
   render();
   adjust(type, +1);
-  const url = { rate: "/api/rate", not_seen: "/api/not-seen", later: "/api/later" }[type];
-  const body = type === "rate" ? { film_id: record.film_id, score } : { film_id: record.film_id };
-  queue.enqueue({ url, body });
+  const body = { film_id: record.film_id, client_id: newId() };
+  if (type === "rate") body.score = score;
+  queue.enqueue({ type, body });
   if (session.needsRefill) session.refill(queue.size).then(render).catch(() => {});
 }
 
@@ -116,7 +121,7 @@ async function undo() {
   if (item) {
     render();
     adjust(lastType, -1);
-    queue.enqueue({ url: "/api/undo", body: {} });
+    queue.enqueue({ type: "undo", body: { client_id: newId() } });
     return;
   }
   // Nothing left locally: undo actions from an earlier visit directly on the server.
@@ -152,11 +157,17 @@ document.querySelectorAll(".action-buttons .action").forEach((button) =>
   button.addEventListener("click", () => handle({ type: button.dataset.action })),
 );
 
-window.addEventListener("beforeunload", (event) => {
-  if (queue.size) {
-    event.preventDefault();
-    event.returnValue = "";
-  }
+// When the page is hidden or closed, hand all unconfirmed actions to the browser in one ordered
+// batch. Every action carries a client_id, so the server ignores ones it has already processed.
+function flushWithBeacon() {
+  const pending = queue.pending;
+  if (!pending.length || !navigator.sendBeacon) return;
+  const actions = pending.map((r) => ({ type: r.type, ...r.body }));
+  navigator.sendBeacon("/api/actions", new Blob([JSON.stringify({ actions })], { type: "application/json" }));
+}
+window.addEventListener("pagehide", flushWithBeacon);
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") flushWithBeacon();
 });
 
 session

@@ -109,7 +109,16 @@ def detect_mapping(headers: list[str]) -> ColumnMapping:
             if match:
                 found[name] = match
                 used.add(match)
-    mapping = ColumnMapping(**found)
+    mapping = ColumnMapping(
+        title=found.get("title"),
+        date=found.get("date"),
+        profile=found.get("profile"),
+        duration=found.get("duration"),
+        position=found.get("position"),
+        kind=found.get("kind"),
+        episode=found.get("episode"),
+        year=found.get("year"),
+    )
     for name in ("duration", "position"):
         header = found.get(name)
         if header:
@@ -191,7 +200,7 @@ def _text(record: dict[str, Any], column: str | None) -> str:
 
 
 def parse_prime(path: Path, mapping: ColumnMapping | None = None) -> ParseResult:
-    fmt, headers, records = read_records(path)
+    _, headers, records = read_records(path)
     mapping = mapping or detect_mapping(headers)
     if not mapping.title:
         raise ValueError(

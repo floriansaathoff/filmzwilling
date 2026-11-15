@@ -306,8 +306,10 @@ class Repository:
                     if tmdb_ok is not None:
                         by_tmdb[tmdb_ok] = (-1, f.movielens_id)
             conn.executemany(
-                "UPDATE films SET ml_title = ?, ml_year = ?, ml_genres = ?, ml_count = ?, ml_mean = ?, "
-                "popularity_rank = ?, movielens_id = ?, tmdb_id = COALESCE(tmdb_id, ?) WHERE id = ?",
+                "UPDATE films SET ml_title = ?, ml_year = ?, ml_genres = ?, ml_count = ?, "
+                "ml_mean = ?, "
+                "popularity_rank = ?, movielens_id = ?, tmdb_id = COALESCE(tmdb_id, ?) WHERE id "
+                "= ?",
                 updates,
             )
             conn.executemany(
@@ -346,7 +348,8 @@ class Repository:
                 )
                 return int(cur.lastrowid or 0)
             conn.execute(
-                "UPDATE films SET title = ?, original_title = ?, year = ?, runtime = ?, genres = ?, "
+                "UPDATE films SET title = ?, original_title = ?, year = ?, runtime = ?, genres "
+                "= ?, "
                 "poster_path = ?, vote_average = ?, vote_count = ?, release_date = ?, "
                 "popularity = ?, meta_fetched_at = ? WHERE id = ?",
                 (*values, row["id"]),
@@ -360,7 +363,8 @@ class Repository:
         with self.db.connection() as conn:
             conn.execute("DELETE FROM film_offers WHERE film_id = ?", (film_id,))
             conn.executemany(
-                "INSERT OR IGNORE INTO film_offers (film_id, provider_id, provider_name, logo_path, "
+                "INSERT OR IGNORE INTO film_offers (film_id, provider_id, provider_name, "
+                "logo_path, "
                 "category, display_priority) VALUES (?, ?, ?, ?, ?, ?)",
                 [
                     (
@@ -445,7 +449,8 @@ class Repository:
             for chunk in _chunks(ids):
                 marks = ",".join("?" * len(chunk))
                 rows = conn.execute(
-                    "SELECT film_id, provider_id, provider_name, logo_path, category, display_priority "
+                    "SELECT film_id, provider_id, provider_name, logo_path, category, "
+                    "display_priority "
                     f"FROM film_offers WHERE film_id IN ({marks}) "
                     "ORDER BY display_priority, provider_name",
                     chunk,
@@ -539,7 +544,8 @@ class Repository:
     def upsert_providers(self, providers: Sequence[Any]) -> None:
         with self.db.connection() as conn:
             conn.executemany(
-                "INSERT INTO providers (provider_id, name, logo_path, display_priority) VALUES (?, ?, ?, ?) "
+                "INSERT INTO providers (provider_id, name, logo_path, display_priority) VALUES "
+                "(?, ?, ?, ?) "
                 "ON CONFLICT(provider_id) DO UPDATE SET name = excluded.name, "
                 "logo_path = excluded.logo_path, display_priority = excluded.display_priority",
                 [(p.provider_id, p.name, p.logo_path, p.display_priority) for p in providers],
@@ -587,7 +593,8 @@ class Repository:
                 self._log(conn, film_id, ACTION_RATE)
             conn.execute(
                 "INSERT INTO ratings (film_id, score, rated_at) VALUES (?, ?, ?) "
-                "ON CONFLICT(film_id) DO UPDATE SET score = excluded.score, rated_at = excluded.rated_at",
+                "ON CONFLICT(film_id) DO UPDATE SET score = excluded.score, rated_at = "
+                "excluded.rated_at",
                 (film_id, note, self._now()),
             )
             conn.execute("DELETE FROM film_status WHERE film_id = ?", (film_id,))
@@ -604,9 +611,11 @@ class Repository:
 
     def list_ratings(self, query: str | None = None) -> list[dict[str, Any]]:
         with self.db.connection() as conn:
+            columns = ", ".join("f." + c.strip() for c in FILM_COLUMNS.split(","))
             rows = conn.execute(
-                f"SELECT r.score, r.rated_at, {', '.join('f.' + c.strip() for c in FILM_COLUMNS.split(','))} "
-                "FROM ratings r JOIN films f ON f.id = r.film_id ORDER BY r.rated_at DESC, r.film_id DESC"
+                f"SELECT r.score, r.rated_at, {columns} "
+                "FROM ratings r JOIN films f ON f.id = r.film_id ORDER BY r.rated_at DESC, "
+                "r.film_id DESC"
             ).fetchall()
         needle = (query or "").strip().lower()
         result: list[dict[str, Any]] = []
@@ -652,7 +661,8 @@ class Repository:
                 self._log(conn, film_id, log_action)
             conn.execute(
                 "INSERT INTO film_status (film_id, status, updated_at) VALUES (?, ?, ?) "
-                "ON CONFLICT(film_id) DO UPDATE SET status = excluded.status, updated_at = excluded.updated_at",
+                "ON CONFLICT(film_id) DO UPDATE SET status = excluded.status, updated_at = "
+                "excluded.updated_at",
                 (film_id, status, self._now()),
             )
 
@@ -689,7 +699,8 @@ class Repository:
             else:
                 conn.execute(
                     "INSERT INTO ratings (film_id, score, rated_at) VALUES (?, ?, ?) "
-                    "ON CONFLICT(film_id) DO UPDATE SET score = excluded.score, rated_at = excluded.rated_at",
+                    "ON CONFLICT(film_id) DO UPDATE SET score = excluded.score, rated_at = "
+                    "excluded.rated_at",
                     (film_id, prev["score"], prev.get("rated_at") or self._now()),
                 )
             if prev.get("status") is None:
@@ -755,7 +766,8 @@ class Repository:
             if row is None:
                 conn.execute(
                     "INSERT INTO watch_events (source, profile, raw_title, tmdb_id, movielens_id, "
-                    "first_seen, last_seen, total_watch_seconds, max_position_seconds, sessions, hints, "
+                    "first_seen, last_seen, total_watch_seconds, max_position_seconds, "
+                    "sessions, hints, "
                     "year, kind, match_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     (
                         *key,
@@ -781,7 +793,8 @@ class Repository:
             conn.execute(
                 "UPDATE watch_events SET first_seen = ?, last_seen = ?, total_watch_seconds = ?, "
                 "max_position_seconds = ?, sessions = ?, year = ?, kind = ?, hints = ?, "
-                "tmdb_id = COALESCE(tmdb_id, ?), movielens_id = COALESCE(movielens_id, ?) WHERE id = ?",
+                "tmdb_id = COALESCE(tmdb_id, ?), movielens_id = COALESCE(movielens_id, ?) WHERE "
+                "id = ?",
                 (
                     values["first_seen"],
                     values["last_seen"],
@@ -804,12 +817,14 @@ class Repository:
         """Merge hints into an event; creates a hint-only event if needed (returns True then)."""
         with self.db.connection() as conn:
             row = conn.execute(
-                "SELECT id, hints FROM watch_events WHERE source = ? AND profile = ? AND raw_title = ?",
+                "SELECT id, hints FROM watch_events WHERE source = ? AND profile = ? AND "
+                "raw_title = ?",
                 (source, profile, raw_title),
             ).fetchone()
             if row is None:
                 conn.execute(
-                    "INSERT INTO watch_events (source, profile, raw_title, sessions, hints) VALUES (?, ?, ?, 0, ?)",
+                    "INSERT INTO watch_events (source, profile, raw_title, sessions, hints) "
+                    "VALUES (?, ?, ?, 0, ?)",
                     (source, profile, raw_title, json.dumps(hints, ensure_ascii=False)),
                 )
                 return True
@@ -843,7 +858,8 @@ class Repository:
         """Distinct raw titles without tmdb_id that are not ignored/unmatched."""
         with self.db.connection() as conn:
             rows = conn.execute(
-                "SELECT raw_title, MAX(year) AS year, MIN(source) AS source, MAX(last_seen) AS last_seen, "
+                "SELECT raw_title, MAX(year) AS year, MIN(source) AS source, MAX(last_seen) AS "
+                "last_seen, "
                 "MIN(CASE WHEN kind = 'movie' THEN 0 ELSE 1 END) AS ambiguous "
                 "FROM watch_events WHERE tmdb_id IS NULL AND match_status = 'pending' "
                 "GROUP BY raw_title ORDER BY MIN(id)"
@@ -883,7 +899,8 @@ class Repository:
         with self.db.connection() as conn:
             cur = conn.execute(
                 "UPDATE watch_events SET movielens_id = (SELECT f.movielens_id FROM films f "
-                "WHERE f.tmdb_id = watch_events.tmdb_id) WHERE tmdb_id IS NOT NULL AND movielens_id IS NULL "
+                "WHERE f.tmdb_id = watch_events.tmdb_id) WHERE tmdb_id IS NOT NULL AND "
+                "movielens_id IS NULL "
                 "AND EXISTS (SELECT 1 FROM films f WHERE f.tmdb_id = watch_events.tmdb_id "
                 "AND f.movielens_id IS NOT NULL)"
             )
@@ -900,13 +917,16 @@ class Repository:
     ) -> int:
         with self.db.connection() as conn:
             conn.execute(
-                "INSERT INTO unmatched (raw_title, year, source, best_score, best_title, created_at) "
+                "INSERT INTO unmatched (raw_title, year, source, best_score, best_title, "
+                "created_at) "
                 "VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(raw_title) DO UPDATE SET "
-                "best_score = excluded.best_score, best_title = excluded.best_title, year = excluded.year",
+                "best_score = excluded.best_score, best_title = excluded.best_title, year = "
+                "excluded.year",
                 (raw_title, year, source, best_score, best_title, self._now()),
             )
             conn.execute(
-                "UPDATE watch_events SET match_status = 'unmatched' WHERE raw_title = ? AND tmdb_id IS NULL",
+                "UPDATE watch_events SET match_status = 'unmatched' WHERE raw_title = ? AND "
+                "tmdb_id IS NULL",
                 (raw_title,),
             )
             return int(
@@ -971,7 +991,8 @@ class Repository:
         with self.db.connection() as conn:
             conn.execute("UPDATE unmatched SET status = 'ignored' WHERE id = ?", (unmatched_id,))
             conn.execute(
-                "UPDATE watch_events SET match_status = 'ignored' WHERE raw_title = ? AND tmdb_id IS NULL",
+                "UPDATE watch_events SET match_status = 'ignored' WHERE raw_title = ? AND "
+                "tmdb_id IS NULL",
                 (item.raw_title,),
             )
 
@@ -980,7 +1001,8 @@ class Repository:
         with self.db.connection() as conn:
             conn.execute("DELETE FROM recommendations")
             conn.executemany(
-                "INSERT INTO recommendations (movielens_id, film_id, score, support, twin_mean, rank) "
+                "INSERT INTO recommendations (movielens_id, film_id, score, support, twin_mean, "
+                "rank) "
                 "VALUES (?, ?, ?, ?, ?, ?)",
                 [
                     (r.movielens_id, r.film_id, r.score, r.support, r.twin_mean, r.rank)
@@ -996,7 +1018,8 @@ class Repository:
     def load_recommendations(self) -> list[StoredRecommendation]:
         with self.db.connection() as conn:
             rows = conn.execute(
-                "SELECT movielens_id, film_id, score, support, twin_mean, rank FROM recommendations ORDER BY rank"
+                "SELECT movielens_id, film_id, score, support, twin_mean, rank FROM "
+                "recommendations ORDER BY rank"
             )
             return [StoredRecommendation(r[0], r[1], r[2], r[3], r[4], r[5]) for r in rows]
 
@@ -1004,7 +1027,8 @@ class Repository:
         with self.db.connection() as conn:
             conn.execute("DELETE FROM twins")
             conn.executemany(
-                "INSERT INTO twins (rank, ml_user_id, similarity, overlap, top_movies) VALUES (?, ?, ?, ?, ?)",
+                "INSERT INTO twins (rank, ml_user_id, similarity, overlap, top_movies) VALUES "
+                "(?, ?, ?, ?, ?)",
                 [
                     (
                         t.rank,
@@ -1054,6 +1078,7 @@ class Repository:
         with self.db.connection() as conn:
             conn.execute(
                 "INSERT INTO tmdb_cache (key, payload, fetched_at) VALUES (?, ?, ?) "
-                "ON CONFLICT(key) DO UPDATE SET payload = excluded.payload, fetched_at = excluded.fetched_at",
+                "ON CONFLICT(key) DO UPDATE SET payload = excluded.payload, fetched_at = "
+                "excluded.fetched_at",
                 (key, json.dumps(payload, ensure_ascii=False), fetched),
             )
