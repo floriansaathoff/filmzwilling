@@ -364,10 +364,7 @@ def check(
         f"  Popularitätsrang: {_thousands(result.popularity_rank or 0)} von "
         f"{_thousands(result.total_movies or 0)}"
     )
-    if result.queue_position is not None:
-        typer.echo(f"  Warteschlange: Platz {result.queue_position} von {result.queue_size}")
-    if result.own_rating is not None:
-        typer.echo(f"  Deine Note: {result.own_rating}")
+    typer.echo(f"  Warteschlange: {result.queue_status}")
     if result.note:
         typer.echo(f"  Hinweis: {result.note}")
 

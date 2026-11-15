@@ -27,7 +27,8 @@ def placeholder_svg(title: str, year: int | None = None) -> str:
         for i, line in enumerate(lines)
     )
     year_text = (
-        f'<text x="171" y="440" font-size="26" fill="#cbd5e1" text-anchor="middle">{year}</text>'
+        f'<text x="171" y="440" font-family="system-ui, sans-serif" font-size="26" '
+        f'fill="#cbd5e1" text-anchor="middle">{year}</text>'
         if year
         else ""
     )

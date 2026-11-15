@@ -243,9 +243,13 @@ input[type="checkbox"] { accent-color: var(--accent); width: 1.05rem; height: 1.
 /* --- small screens (rating on the phone) --- */
 @media (max-width: 640px) {
   .main { padding: 1rem 0.7rem 2rem; }
-  .card { grid-template-columns: 1fr; padding: 0.8rem; }
-  .poster-wrap { max-width: 240px; margin: 0 auto; width: 100%; }
-  .film-title { font-size: 1.5rem; }
+  /* Compact card so that the score buttons stay visible without scrolling. */
+  .card { grid-template-columns: 110px 1fr; gap: 0.8rem; padding: 0.7rem; }
+  .poster-wrap { width: 110px; }
+  .film-title { font-size: 1.25rem; }
+  .film-meta { font-size: 0.9rem; margin-bottom: 0.5rem; }
+  .chip { font-size: 0.78rem; }
+  .score-buttons { margin-top: 0.8rem; }
   .score-buttons { grid-template-columns: repeat(6, 1fr); }
   .score { min-height: 52px; }
   .action kbd { display: none; }

@@ -85,6 +85,7 @@ class CheckResult:
     total_movies: int | None = None
     queue_position: int | None = None
     queue_size: int | None = None
+    queue_status: str | None = None
     own_rating: int | None = None
     note: str | None = None
 
@@ -660,22 +661,24 @@ class FilmService:
         film_id = self.repo.film_id_for_movielens(ml_id)
         position = None
         own = None
+        queue = build_queue(self.repo)
         if film_id is not None:
             own = self.repo.get_rating(film_id)
-            queue = build_queue(self.repo)
             position = next((i + 1 for i, e in enumerate(queue) if e.film_id == film_id), None)
-        if note is None:
-            if tmdb_id is None:
-                note = "Keine tmdbId in links.csv: der Film kann nicht in die Warteschlange."
-            elif own is not None:
-                note = "Schon bewertet."
-            elif position is None:
-                status = self.repo.statuses().get(film_id or -1)
-                note = (
-                    "Als „nicht gesehen“ markiert."
-                    if status == "not_seen"
-                    else "Nicht in der Warteschlange (Größe der Warteschlange erhöhen)."
-                )
+        queue_size = self.repo.get_user_settings().queue_size
+        if tmdb_id is None:
+            queue_status = "nicht möglich (keine tmdbId in links.csv)"
+        elif own is not None:
+            queue_status = f"schon bewertet (Note {own})"
+        elif position is not None:
+            queue_status = f"Platz {position} von {len(queue)}"
+        elif self.repo.statuses().get(film_id or -1) == "not_seen":
+            queue_status = "als „nicht gesehen“ markiert"
+        else:
+            queue_status = (
+                f"nicht enthalten (nur die {queue_size} meistbewerteten Filme kommen hinein, "
+                "Größe in den Einstellungen änderbar)"
+            )
         mean = row["mean"]
         return CheckResult(
             query=title,
@@ -689,7 +692,8 @@ class FilmService:
             popularity_rank=int(row["popularity_rank"]),
             total_movies=data.n_movies,
             queue_position=position,
-            queue_size=len(build_queue(self.repo)) if film_id is not None else None,
+            queue_size=len(queue),
+            queue_status=queue_status,
             own_rating=own,
             note=note,
         )

@@ -44,36 +44,37 @@ CLUSTER_GENRES = (
 )
 
 _ADJECTIVES = (
-    "Der lange",
-    "Die stille",
-    "Das letzte",
-    "Der kalte",
-    "Die verlorene",
-    "Das rote",
-    "Der dunkle",
-    "Die goldene",
-    "Das geheime",
-    "Der wilde",
-    "Die zweite",
-    "Das ferne",
+    "lang",
+    "still",
+    "letzt",
+    "kalt",
+    "verloren",
+    "rot",
+    "dunkl",
+    "golden",
+    "geheim",
+    "wild",
+    "zweit",
+    "fern",
 )
+# (noun, article) so that "Der lange Sommer" / "Die stille Stadt" / "Das letzte Signal" fit.
 _NOUNS = (
-    "Sommer",
-    "Stadt",
-    "Signal",
-    "Fluss",
-    "Reise",
-    "Haus",
-    "Horizont",
-    "Spiel",
-    "Nacht",
-    "Grenze",
-    "Insel",
-    "Echo",
-    "Spur",
-    "Wald",
-    "Planet",
-    "Brücke",
+    ("Sommer", "Der"),
+    ("Stadt", "Die"),
+    ("Signal", "Das"),
+    ("Fluss", "Der"),
+    ("Reise", "Die"),
+    ("Haus", "Das"),
+    ("Horizont", "Der"),
+    ("Spiel", "Das"),
+    ("Nacht", "Die"),
+    ("Grenze", "Die"),
+    ("Insel", "Die"),
+    ("Echo", "Das"),
+    ("Spur", "Die"),
+    ("Wald", "Der"),
+    ("Planet", "Der"),
+    ("Brücke", "Die"),
 )
 _SUFFIXES = ("", " II", " – Die Rückkehr", " von Hamburg", " am Meer", " im Nebel", " 3000")
 
@@ -101,10 +102,10 @@ class SyntheticDataset:
 
 
 def _title_for(rng: np.random.Generator, index: int) -> str:
-    adj = _ADJECTIVES[index % len(_ADJECTIVES)]
-    noun = _NOUNS[(index // len(_ADJECTIVES)) % len(_NOUNS)]
+    stem = _ADJECTIVES[index % len(_ADJECTIVES)]
+    noun, article = _NOUNS[(index // len(_ADJECTIVES)) % len(_NOUNS)]
     suffix = _SUFFIXES[int(rng.integers(0, len(_SUFFIXES)))] if index >= 150 else ""
-    return f"{adj} {noun}{suffix}"
+    return f"{article} {stem}e {noun}{suffix}"
 
 
 def generate_dataset(
