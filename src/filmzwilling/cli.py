@@ -17,7 +17,7 @@ from filmzwilling.config import Settings, load_settings
 from filmzwilling.importers.common import ImportReport
 from filmzwilling.importers.prime import inspect_file
 from filmzwilling.movielens import ChecksumError, DownloadError, setup_movielens
-from filmzwilling.service import NO_DATA_MESSAGE, FilmService, ServiceError
+from filmzwilling.service import NO_DATA_MESSAGE, NOT_FOUND_NOTE, FilmService, ServiceError
 from filmzwilling.tmdb import TMDBError
 
 app = typer.Typer(
@@ -347,7 +347,7 @@ def check(
     result = service.check_title(title, year)
     if not result.found:
         typer.echo(f"„{title}“ wurde in MovieLens nicht gefunden.")
-        if result.note and "nicht" not in result.note.lower():
+        if result.note and result.note != NOT_FOUND_NOTE:
             typer.echo(result.note)
         return
     typer.echo(f"„{result.title}“ ({result.year or 'Jahr unbekannt'})")

@@ -15,6 +15,7 @@ from filmzwilling.repository import Repository
 from filmzwilling.synthetic import generate_dataset, write_zip
 
 runner = CliRunner()
+FIXTURES_NETFLIX = Path(__file__).parent / "fixtures" / "netflix"
 
 
 @pytest.fixture(autouse=True)
@@ -259,3 +260,85 @@ def test_serve_makes_backup(demo_dir: Path, monkeypatch: pytest.MonkeyPatch) -> 
     backup = demo_dir / "backups" / f"ratings-{date.today().isoformat()}.csv"
     assert backup.exists()
     assert len(backup.read_text(encoding="utf-8").splitlines()) == 4
+
+
+@pytest.fixture
+def online_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """A non-demo data dir with synthetic MovieLens data, used with a mocked TMDB."""
+    from filmzwilling.movielens import process_movielens
+    from filmzwilling.service import FilmService
+    from filmzwilling.synthetic import write_csvs
+
+    monkeypatch.delenv("FILMZWILLING_OFFLINE", raising=False)
+    data_dir = tmp_path / "online"
+    ds = generate_dataset(
+        n_users=80, n_movies=60, n_favorites=3, min_ratings=15, max_ratings=40, seed=4
+    )
+    src = write_csvs(ds, tmp_path / "csv")
+    settings = Settings(data_dir=data_dir)
+    process_movielens(src, settings.processed_dir, checksum="online")
+    FilmService(settings).sync_movielens_films()
+    return data_dir
+
+
+def mock_tmdb(router) -> None:  # type: ignore[no-untyped-def]
+    from conftest import tmdb_fixture_handler
+
+    router.route(host="api.themoviedb.org").mock(side_effect=tmdb_fixture_handler())
+
+
+def test_tmdb_sync_online(online_dir: Path) -> None:
+    import respx
+
+    with respx.mock(assert_all_called=False) as router:
+        mock_tmdb(router)
+        r = runner.invoke(
+            cli.app,
+            [
+                "import",
+                "netflix",
+                str(FIXTURES_NETFLIX / "NetflixViewingHistory.csv"),
+                "--profile",
+                "Florian",
+                "--data-dir",
+                str(online_dir),
+            ],
+        )
+        assert r.exit_code == 0, r.output
+        assert "TMDB: 2 zugeordnet" in r.output
+        r = runner.invoke(cli.app, ["tmdb-sync", "--limit", "5", "--data-dir", str(online_dir)])
+    assert r.exit_code == 0, r.output
+    assert "Anbieterliste: 15 Anbieter" in r.output
+    assert "Neuerscheinungen seit Oktober 2023: 3 Filme" in r.output
+    repo = Repository(Database(Settings(data_dir=online_dir).db_path))
+    assert len(repo.list_providers()) == 15
+    assert len(repo.list_new_releases()) == 3
+    assert [u.raw_title for u in repo.list_unmatched()] == ["Mission: Impossible – Fallout"]
+
+
+def test_tmdb_sync_auth_error(online_dir: Path) -> None:
+    import httpx
+    import respx
+
+    with respx.mock:
+        respx.route(host="api.themoviedb.org").mock(return_value=httpx.Response(401, json={}))
+        r = runner.invoke(cli.app, ["tmdb-sync", "--data-dir", str(online_dir)])
+    assert r.exit_code == 1
+    assert "TMDB-Token fehlt oder ist ungültig, siehe README" in r.output
+
+
+def test_check_uses_tmdb_when_online(online_dir: Path) -> None:
+    import httpx
+    import respx
+
+    from conftest import load_json
+
+    payload = load_json("search_der_pate.json")
+    payload["results"][0]["id"] = 100001  # pretend TMDB knows synthetic movie 1 as "Der Pate"
+    with respx.mock:
+        respx.get("https://api.themoviedb.org/3/search/movie").mock(
+            return_value=httpx.Response(200, json=payload)
+        )
+        r = runner.invoke(cli.app, ["check", "Der Pate", "--data-dir", str(online_dir)])
+    assert r.exit_code == 0, r.output
+    assert "movieId 1," in r.output

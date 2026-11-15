@@ -31,14 +31,14 @@ Die App ist vollständig nach Auftrag gebaut, Tests zuerst (Commit `test: add fu
 
 | Lauf | Ergebnis |
 |---|---|
-| `pytest` (Standardlauf) | 420 bestanden, 6 abgewählt (slow, e2e, real_data) |
+| `pytest` (Standardlauf) | 423 bestanden, 6 abgewählt (slow, e2e, real_data) |
 | `pytest -m slow` | 1 bestanden: 20.000 Nutzer × 3.000 Filme (1,8 Mio. Bewertungen) in 0,04 s, Grenze 5 s |
 | `pytest -m e2e` | 1 bestanden (Chromium über Playwright für Node) |
 | `FILMZWILLING_REAL_DATA=1 pytest -m real_data` | 4 bestanden |
 | `node --test tests/js/` | 17 bestanden |
 | `ruff check`, `ruff format --check` | keine Befunde |
 | `mypy src` (strict für scale, similarity, recommender) | keine Befunde in 31 Dateien |
-| Coverage `src/filmzwilling` | 95 % (3590 Anweisungen, Zweige mitgezählt) |
+| Coverage `src/filmzwilling` | 96 % (3591 Anweisungen, Zweige mitgezählt) |
 
 Alle Läufe wurden zusätzlich in einem frischen Klon mit neuer virtueller Umgebung wiederholt
 (`pip install -e ".[dev]"`), mit demselben Ergebnis. `filmzwilling demo` lief dort mit

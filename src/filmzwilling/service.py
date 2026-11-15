@@ -53,6 +53,7 @@ log = logging.getLogger(__name__)
 
 NO_DATA_MESSAGE = "MovieLens-Daten fehlen. Bitte zuerst 'filmzwilling setup' ausführen."
 OFFLINE_MESSAGE = "TMDB ist nicht verfügbar (Offline- oder Demo-Modus)."
+NOT_FOUND_NOTE = "Nicht in MovieLens gefunden."
 TMDB_MOVIE_URL = "https://www.themoviedb.org/movie/{}"
 CATEGORY_LABELS = {
     "flatrate": "Abo",
