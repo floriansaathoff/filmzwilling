@@ -54,6 +54,11 @@ Phase 4 per HTTP: `filmzwilling demo` gestartet, alle sechs Seiten liefern 200 o
 Template-Reste, 50 Bewertungen über `POST /api/rate`, danach liefert `/api/recommendations` 229
 Empfehlungen (mit Standard-Anbieterfilter).
 
+Tempo beim Bewerten: 40 Bewertungen per Tastatur im Demo-Modus, gemessen im Browser vom
+Tastendruck bis zum neuen Titel: Median 0,7 ms, höchstens 2,1 ms. Alle 40 Bewertungen kamen beim
+Server an. Auf echten Daten braucht der Server für `POST /api/rate` etwa 11 ms, das läuft im
+Hintergrund und bremst die Anzeige nicht.
+
 Ein Fund aus dem E2E-Test: Wer direkt nach dem Bewerten die Seite verlässt, verlor die noch nicht
 gesendeten Aktionen. Behoben mit `client_id` pro Aktion, `keepalive` und einem
 `sendBeacon`-Batch beim Verlassen (Details in `docs/ENTSCHEIDUNGEN.md`).
