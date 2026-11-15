@@ -21,3 +21,9 @@ Hier stehen alle Entscheidungen, die der Auftrag offen ließ, jeweils mit Begrü
     `data/raw/ml-32m.zip` legen und `setup` erneut starten (oder `setup --zip PFAD`).
   - Die MD5-Summe ist zusätzlich im Code hinterlegt, falls die `.md5`-Datei nicht geladen werden
     kann (manueller Download). Die TLS-Prüfung wird nie abgeschaltet.
+
+## Testkorrekturen in Phase 2
+
+- `test_missing_metadata_and_offers` erwartete, dass auch ein Film ohne tmdbId als „Metadaten
+  fehlen“ gemeldet wird. Für so einen Film kann TMDB nichts liefern; die Funktion dient aber genau
+  dazu, die abzufragenden Filme zu bestimmen. Der Test prüft jetzt nur Filme mit tmdbId.

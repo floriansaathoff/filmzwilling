@@ -132,7 +132,9 @@ def test_missing_metadata_and_offers(repo: Repository) -> None:
     r = Repository(repo.db, clock=lambda: now)
     r.upsert_movielens_films(ml_films())
     ids = [r.film_id_for_movielens(i) for i in range(1, 6)]
-    assert set(r.films_missing_metadata(ids)) == set(ids)
+    # Film 4 has no tmdb_id: there is nothing to fetch for it.
+    fetchable = set(ids) - {r.film_id_for_movielens(4)}
+    assert set(r.films_missing_metadata(ids)) == fetchable
     fid = r.upsert_tmdb_details(details(1001), fetched_at=now - timedelta(days=10))
     r.set_film_offers(fid, [], fetched_at=now - timedelta(days=10))
     assert fid not in r.films_missing_metadata(ids)

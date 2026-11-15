@@ -27,4 +27,10 @@ ML_TO_GERMAN: dict[str, str] = {
 
 
 def german_genres(ml_genres: list[str]) -> list[str]:
-    raise NotImplementedError
+    """Translate MovieLens genres; unknown names pass through, duplicates and blanks vanish."""
+    result: list[str] = []
+    for genre in ml_genres:
+        name = ML_TO_GERMAN.get(genre, genre)
+        if name and name not in result:
+            result.append(name)
+    return result
