@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Zuordnung{% endblock %}
+{% block content %}
+<section class="matching" id="matching-app" data-online="{{ '1' if online else '0' }}">
+  <h1>Zuordnung</h1>
+  <p class="muted">Importierte Titel, die nicht sicher einem Film zugeordnet werden konnten. Suche den richtigen Film oder klicke „Ignorieren“.</p>
+  {% if not online %}<p class="notice">TMDB ist nicht verfügbar (Offline- oder Demo-Modus): Die Suche funktioniert erst mit Netz und Token.</p>{% endif %}
+  <ul class="unmatched" id="unmatched-list">
+    {% for u in items %}
+    <li class="unmatched-item" data-id="{{ u.id }}">
+      <div class="unmatched-head">
+        <strong>{{ u.raw_title }}</strong>{% if u.year %} ({{ u.year }}){% endif %}
+        <span class="muted">· {{ u.source }} · {{ u.profiles | join(', ') }}{% if u.best_title %} · bester Treffer: {{ u.best_title }} ({{ u.best_score | round(0) | int }}){% endif %}</span>
+      </div>
+      <form class="unmatched-search">
+        <input type="search" name="q" value="{{ u.raw_title }}" aria-label="Suchbegriff">
+        <button type="submit">Suchen</button>
+        <button type="button" class="secondary ignore">Ignorieren</button>
+      </form>
+      <ul class="results"></ul>
+    </li>
+    {% else %}
+    <li class="empty-row">Keine offenen Titel. 🎉</li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}
+{% block scripts %}<script type="module" src="/static/js/matching.js?v={{ version }}"></script>{% endblock %}

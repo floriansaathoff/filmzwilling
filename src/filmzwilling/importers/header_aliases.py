@@ -6,6 +6,8 @@ non-alphanumeric character removed ("Date Watched" -> "datewatched").
 
 from __future__ import annotations
 
+import re
+
 HEADER_ALIASES: dict[str, tuple[str, ...]] = {
     "title": (
         "title",
@@ -135,6 +137,10 @@ MILLISECOND_HINTS: tuple[str, ...] = ("ms", "millis", "milliseconds", "milliseku
 MINUTE_HINTS: tuple[str, ...] = ("minutes", "minuten", "mins")
 
 
+_UMLAUTS = str.maketrans({"ä": "ae", "ö": "oe", "ü": "ue", "ß": "ss"})
+
+
 def normalize_header(header: str) -> str:
     """Normalise a header for alias lookup."""
-    raise NotImplementedError
+    text = header.replace("\ufeff", "").strip().lower().translate(_UMLAUTS)
+    return re.sub(r"[^a-z0-9]", "", text)

@@ -412,6 +412,19 @@ class Repository:
             row = conn.execute("SELECT id FROM films WHERE tmdb_id = ?", (tmdb_id,)).fetchone()
         return None if row is None else int(row["id"])
 
+    def film_ids_for_tmdb(self, tmdb_ids: Iterable[int]) -> dict[int, int]:
+        """tmdb_id -> film_id for the given TMDB ids (unknown ids are left out)."""
+        ids = list(dict.fromkeys(int(i) for i in tmdb_ids))
+        result: dict[int, int] = {}
+        with self.db.connection() as conn:
+            for chunk in _chunks(ids):
+                marks = ",".join("?" * len(chunk))
+                for row in conn.execute(
+                    f"SELECT tmdb_id, id FROM films WHERE tmdb_id IN ({marks})", chunk
+                ):
+                    result[int(row[0])] = int(row[1])
+        return result
+
     def film_id_for_movielens(self, movielens_id: int) -> int | None:
         with self.db.connection() as conn:
             row = conn.execute(
@@ -787,7 +800,8 @@ class Repository:
 
     def merge_event_hints(
         self, source: str, profile: str, raw_title: str, hints: dict[str, Any]
-    ) -> None:
+    ) -> bool:
+        """Merge hints into an event; creates a hint-only event if needed (returns True then)."""
         with self.db.connection() as conn:
             row = conn.execute(
                 "SELECT id, hints FROM watch_events WHERE source = ? AND profile = ? AND raw_title = ?",
@@ -798,12 +812,13 @@ class Repository:
                     "INSERT INTO watch_events (source, profile, raw_title, sessions, hints) VALUES (?, ?, ?, 0, ?)",
                     (source, profile, raw_title, json.dumps(hints, ensure_ascii=False)),
                 )
-                return
+                return True
             merged = {**json.loads(row["hints"] or "{}"), **hints}
             conn.execute(
                 "UPDATE watch_events SET hints = ? WHERE id = ?",
                 (json.dumps(merged, ensure_ascii=False), row["id"]),
             )
+            return False
 
     def list_watch_events(self) -> list[StoredEvent]:
         with self.db.connection() as conn:

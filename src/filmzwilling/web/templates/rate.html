@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Bewerten{% endblock %}
+{% block content %}
+<section class="rate" id="rate-app">
+  <div class="progress" id="progress" aria-live="polite">
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width: 0%"></div></div>
+    <p class="progress-text" id="progress-text">{{ progress.rated }} bewertet · {{ progress.not_seen }} nicht gesehen · {{ progress.remaining }} übrig</p>
+  </div>
+
+  <div class="card" id="card" hidden>
+    <div class="poster-wrap"><img id="poster" class="poster" alt="" decoding="async"></div>
+    <div class="card-info">
+      <h1 id="film-title" class="film-title"></h1>
+      <p id="film-original" class="film-original"></p>
+      <p id="film-meta" class="film-meta"></p>
+      <ul id="film-hints" class="chips"></ul>
+    </div>
+  </div>
+  <div class="empty" id="empty" hidden>
+    <h1>Alles bewertet</h1>
+    <p>Die Warteschlange ist leer. In den <a href="/einstellungen">Einstellungen</a> kannst du sie vergrößern, oder schau dir deine <a href="/empfehlungen">Empfehlungen</a> an.</p>
+  </div>
+
+  <div class="score-buttons" id="score-buttons" role="group" aria-label="Note">
+    {% for n in range(11) %}<button type="button" class="score" data-score="{{ n }}">{{ n }}</button>{% endfor %}
+  </div>
+  <div class="action-buttons">
+    <button type="button" class="action" data-action="not_seen">Nicht gesehen <kbd>Leertaste</kbd></button>
+    <button type="button" class="action" data-action="later">Später <kbd>S</kbd></button>
+    <button type="button" class="action" data-action="undo">Zurück <kbd>⌫</kbd></button>
+  </div>
+  <p class="retry" id="retry" hidden></p>
+  <details class="help">
+    <summary>Tastenkürzel</summary>
+    <p><kbd>0</kbd>–<kbd>9</kbd> Note 0 bis 9 · <kbd>+</kbd> oder <kbd>Z</kbd> Note 10 · <kbd>Leertaste</kbd> nicht gesehen · <kbd>S</kbd> später · <kbd>⌫</kbd> rückgängig</p>
+  </details>
+</section>
+{% endblock %}
+{% block scripts %}<script type="module" src="/static/js/rate.js?v={{ version }}"></script>{% endblock %}

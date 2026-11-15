@@ -307,7 +307,8 @@ def parse_ml_title(title: str) -> tuple[str, int | None]:
     return text[: match.start()].strip(), int(match.group(1))
 
 
-def _move_article(name: str) -> str:
+def move_article(name: str) -> str:
+    """'Godfather, The' -> 'The Godfather'."""
     for article in _ARTICLES:
         suffix = f", {article}"
         if name.endswith(suffix):
@@ -325,7 +326,7 @@ def clean_ml_title(title: str) -> str:
         stripped = _TRAILING_PAREN_RE.sub("", name).strip()
         if stripped:
             name = stripped
-    return _move_article(name.strip())
+    return move_article(name.strip())
 
 
 # --- processing -----------------------------------------------------------------------------
