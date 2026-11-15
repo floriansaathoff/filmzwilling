@@ -54,6 +54,8 @@ markers = [
 ]
 filterwarnings = [
     "ignore::DeprecationWarning:typer.*",
+    # Starlette's TestClient recommends the httpx2 package; httpx works and is what the app uses.
+    "ignore:Using `httpx` with `starlette.testclient` is deprecated",
 ]
 
 [tool.coverage.run]
