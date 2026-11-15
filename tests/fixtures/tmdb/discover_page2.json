@@ -1,0 +1,23 @@
+{
+ "page": 2,
+ "total_pages": 2,
+ "total_results": 3,
+ "results": [
+  {
+   "adult": false,
+   "id": 1184918,
+   "title": "Der wilde Roboter",
+   "original_title": "The Wild Robot",
+   "release_date": "2024-09-12",
+   "popularity": 200.0,
+   "vote_count": 3000,
+   "vote_average": 8.3,
+   "poster_path": "/robot.jpg",
+   "genre_ids": [
+    16,
+    878
+   ],
+   "original_language": "de"
+  }
+ ]
+}

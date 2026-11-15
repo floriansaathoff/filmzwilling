@@ -1,0 +1,35 @@
+{
+ "genres": [
+  {
+   "id": 16,
+   "name": "Animation"
+  },
+  {
+   "id": 10751,
+   "name": "Familie"
+  }
+ ],
+ "id": 1022789,
+ "original_title": "Inside Out 2",
+ "popularity": 300.0,
+ "poster_path": "/io2.jpg",
+ "release_date": "2024-06-12",
+ "runtime": 97,
+ "title": "Alles steht Kopf 2",
+ "vote_average": 7.6,
+ "vote_count": 5000,
+ "watch/providers": {
+  "results": {
+   "DE": {
+    "flatrate": [
+     {
+      "logo_path": "/disney.jpg",
+      "provider_id": 337,
+      "provider_name": "Disney Plus",
+      "display_priority": 2
+     }
+    ]
+   }
+  }
+ }
+}

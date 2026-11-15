@@ -1,0 +1,39 @@
+{
+ "page": 1,
+ "total_pages": 2,
+ "total_results": 3,
+ "results": [
+  {
+   "adult": false,
+   "id": 1022789,
+   "title": "Alles steht Kopf 2",
+   "original_title": "Inside Out 2",
+   "release_date": "2024-06-12",
+   "popularity": 300.0,
+   "vote_count": 5000,
+   "vote_average": 7.6,
+   "poster_path": "/io2.jpg",
+   "genre_ids": [
+    16,
+    10751
+   ],
+   "original_language": "de"
+  },
+  {
+   "adult": false,
+   "id": 872585,
+   "title": "Oppenheimer",
+   "original_title": "Oppenheimer",
+   "release_date": "2023-07-19",
+   "popularity": 150.0,
+   "vote_count": 9000,
+   "vote_average": 8.1,
+   "poster_path": "/opp.jpg",
+   "genre_ids": [
+    18,
+    36
+   ],
+   "original_language": "de"
+  }
+ ]
+}

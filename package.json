@@ -1,0 +1,9 @@
+{
+  "name": "filmzwilling-frontend-tests",
+  "private": true,
+  "type": "module",
+  "description": "Only used for `node --test tests/js/` (no npm dependencies).",
+  "scripts": {
+    "test": "node --test tests/js/"
+  }
+}
