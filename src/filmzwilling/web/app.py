@@ -123,6 +123,11 @@ def create_app(service: FilmService) -> FastAPI:
     @app.get("/empfehlungen", response_class=HTMLResponse)
     def recs_page(request: Request) -> HTMLResponse:
         count = repo.count_ratings()
+        defaults = set(service.default_provider_ids())
+        providers = [
+            {"id": p.provider_id, "name": p.name, "logo_url": poster_url(p.logo_path, "w92")}
+            for p in repo.list_providers()
+        ]
         return page(
             request,
             "recommendations.html",
@@ -130,11 +135,9 @@ def create_app(service: FilmService) -> FastAPI:
             rating_count=count,
             min_ratings=service.config.min_own_ratings,
             has_data=service.data() is not None,
-            providers=[
-                {"id": p.provider_id, "name": p.name, "logo_url": poster_url(p.logo_path, "w92")}
-                for p in repo.list_providers()
-            ],
-            default_providers=service.default_provider_ids(),
+            my_providers=[p for p in providers if p["id"] in defaults],
+            other_providers=[p for p in providers if p["id"] not in defaults],
+            default_providers=sorted(defaults),
             genres=repo.genres(),
             meta=repo.get_setting("recs_meta"),
         )

@@ -28,6 +28,11 @@ from filmzwilling.tmdb import parse_provider_list
         ("WOW", False),
         ("Smartes Kino", False),
         ("MagentaTV", False),
+        ("Amazon Prime Video Free with Ads", True),
+        ("Netflix Kids", True),
+        ("ZDF Herzkino Amazon Channel", False),
+        ("ZDFtivi Amazon channel", False),
+        ("Arte Amazon Channel", False),
     ],
 )
 def test_is_default_provider(name: str, expected: bool) -> None:

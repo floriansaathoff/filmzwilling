@@ -32,7 +32,14 @@ _DEFAULT_PATTERNS = (
 )
 
 
+# Add-on subscriptions sold through Amazon or Apple ("ZDF Herzkino Amazon Channel") are separate
+# paid services, not variants of the free or subscribed base service.
+_ADDON_CHANNEL = re.compile(r"\bchannel\b", re.IGNORECASE)
+
+
 def is_default_provider(name: str) -> bool:
+    if _ADDON_CHANNEL.search(name):
+        return False
     return any(p.search(name) for p in _DEFAULT_PATTERNS)
 
 

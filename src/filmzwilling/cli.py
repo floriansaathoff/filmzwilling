@@ -351,6 +351,8 @@ def check(
             typer.echo(result.note)
         return
     typer.echo(f"„{result.title}“ ({result.year or 'Jahr unbekannt'})")
+    if result.movielens_title and result.movielens_title != result.title:
+        typer.echo(f"  Titel in MovieLens: {result.movielens_title}")
     typer.echo(
         f"  In MovieLens: ja (movieId {result.movielens_id}, tmdbId {result.tmdb_id or '–'})"
     )

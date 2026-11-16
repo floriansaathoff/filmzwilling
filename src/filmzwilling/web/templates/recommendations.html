@@ -22,11 +22,18 @@
     <fieldset class="filter-group providers">
       <legend>Anbieter</legend>
       <label class="check"><input type="checkbox" name="providers_any" id="providers-any"> alle (auch ohne Anbieterdaten)</label>
+      {% macro provider_box(p) %}<label class="check provider"><input type="checkbox" name="providers" value="{{ p.id }}">{% if p.logo_url %}<img src="{{ p.logo_url }}" alt="" loading="lazy">{% endif %}{{ p.name }}</label>{% endmacro %}
       <div class="provider-list">
-        {% for p in providers %}
-        <label class="check provider"><input type="checkbox" name="providers" value="{{ p.id }}">{% if p.logo_url %}<img src="{{ p.logo_url }}" alt="" loading="lazy">{% endif %}{{ p.name }}</label>
-        {% endfor %}
+        {% for p in my_providers %}{{ provider_box(p) }}{% endfor %}
       </div>
+      {% if other_providers %}
+      <details class="more-providers">
+        <summary>Weitere Anbieter ({{ other_providers | length }})</summary>
+        <div class="provider-list">
+          {% for p in other_providers %}{{ provider_box(p) }}{% endfor %}
+        </div>
+      </details>
+      {% endif %}
       <label class="check"><input type="checkbox" name="rent_buy" value="1"> Leihen und Kaufen zeigen</label>
     </fieldset>
     <fieldset class="filter-group">

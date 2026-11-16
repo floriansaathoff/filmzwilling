@@ -68,6 +68,7 @@ filmzwilling demo                               # App mit synthetischen Daten, o
 
 ## Stand
 
-Alles aus dem Auftrag ist umgesetzt, siehe `docs/BERICHT.md`. Offen ist nur die Live-Prüfung
-gegen TMDB (in der Cloud-Umgebung gab es keinen Token). Der MovieLens-Download scheitert mit
+Alles aus dem Auftrag ist umgesetzt und mit echten Daten geprüft (MovieLens 32M und TMDB live),
+siehe `docs/BERICHT.md`. In der Cloud-Umgebung hängt ein Proxy den TMDB-Token an; Skripte dort
+ohne `TMDB_READ_TOKEN` starten (`env -u TMDB_READ_TOKEN …`). Der MovieLens-Download scheitert mit
 aktuellen Zertifikatslisten, siehe `docs/ENTSCHEIDUNGEN.md`.

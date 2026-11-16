@@ -16,6 +16,7 @@
 }
 
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html { -webkit-text-size-adjust: 100%; }
 body {
   margin: 0;
@@ -180,6 +181,8 @@ input[type="checkbox"] { accent-color: var(--accent); width: 1.05rem; height: 1.
 .filter-group.numbers label { display: flex; flex-direction: column; font-size: 0.85rem; color: var(--muted); }
 .filter-group.numbers input { width: 7rem; }
 .provider-list, .genre-list { max-height: 9.5rem; overflow: auto; }
+.more-providers summary { cursor: pointer; color: var(--muted); margin: 0.3rem 0; }
+.more-providers .provider-list { max-height: 12rem; }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 1rem; }
 .tile {
   background: var(--bg-raised);

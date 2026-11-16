@@ -7,8 +7,8 @@ grob den Phasen.
 
 **api.themoviedb.org ist erreichbar.** `GET /3/configuration` ohne eigenen Auth-Header liefert
 HTTP 401 („Invalid API key“). Der Host antwortet also, aber in dieser Cloud-Umgebung ist kein
-Proxy-Secret für TMDB hinterlegt und `TMDB_READ_TOKEN` ist nicht gesetzt. Der TMDB-Teil von
-Phase 3 konnte deshalb nicht laufen und ist im Bericht als offen markiert.
+Proxy-Secret für TMDB hinterlegt und `TMDB_READ_TOKEN` ist nicht gesetzt. Am 16.11. wurde der
+Token als Netzwerk-Secret der Umgebung gespeichert; danach lief der TMDB-Teil von Phase 3.
 
 **files.grouplens.org ist erreichbar, hat aber ein Zertifikatsproblem.** Der Server liefert eine
 Kette bis „emSign Root CA - G1“ (eMudhra). Dieses Root-Zertifikat fehlt im aktuellen
@@ -79,6 +79,10 @@ Folgen für die App:
   enthält „Netflix“). Kurze Namen müssen am Wortanfang stehen (`\bzdf`, `\barte\b`, `\b3sat\b`,
   `\bjoyn`), sonst würde zum Beispiel „Smartes Kino“ als Arte zählen. „Joyn Plus“ zählt als Joyn,
   so wie der Auftrag es verlangt.
+- Namen mit „Channel“ zählen nicht zur Voreinstellung. Die echte TMDB-Liste für Deutschland
+  (197 Anbieter) enthält etwa „ZDF Herzkino Amazon Channel“ oder „ZDFtivi Amazon channel“. Das
+  sind eigene, kostenpflichtige Zusatzabos bei Amazon oder Apple und keine Variante von ZDF. Wer
+  sie hat, wählt sie in den Einstellungen aus.
 - Ist noch keine Anbieterliste geladen (offline, vor dem ersten `tmdb-sync`), filtern die
   Empfehlungen standardmäßig nicht nach Anbietern. Sonst wäre die Liste leer.
 - Wählt man in der URL ausdrücklich keinen Anbieter (`providers=`), passt kein Film. `providers=any`
@@ -86,7 +90,8 @@ Folgen für die App:
 - Filme ohne Laufzeit oder Jahr fallen heraus, sobald ein Laufzeit- oder Jahresfilter gesetzt ist.
 - Anbieterdaten holt die App für die besten 3000 Kandidaten: nach jeder Neuberechnung im
   Hintergrund nur die veralteten (älter als 7 Tage), mit dem Knopf „Verfügbarkeit aktualisieren“
-  alle 3000.
+  alle 3000. Fehlen einem Kandidaten die Metadaten (Poster, deutscher Titel), holt dieselbe Abfrage
+  die vollständigen Details, die die Anbieter schon enthalten.
 - Der Abschnitt „Neu seit Ende 2023“ ist immer nach TMDB-Note sortiert, egal welche Sortierung
   gewählt ist. Mindest-Match und Mindestzahl Zwillinge gelten dort nicht, weil es keine Vorhersage
   gibt. Discover lädt 3 Seiten (bis zu 60 Filme).

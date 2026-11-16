@@ -1,4 +1,4 @@
-# Bericht: Filmzwilling, Stand 15.11.2026
+# Bericht: Filmzwilling, Stand 16.11.2026
 
 ## Was fertig ist
 
@@ -31,14 +31,14 @@ Die App ist vollständig nach Auftrag gebaut, Tests zuerst (Commit `test: add fu
 
 | Lauf | Ergebnis |
 |---|---|
-| `pytest` (Standardlauf) | 423 bestanden, 6 abgewählt (slow, e2e, real_data) |
+| `pytest` (Standardlauf) | 429 bestanden, 6 abgewählt (slow, e2e, real_data) |
 | `pytest -m slow` | 1 bestanden: 20.000 Nutzer × 3.000 Filme (1,8 Mio. Bewertungen) in 0,04 s, Grenze 5 s |
 | `pytest -m e2e` | 1 bestanden (Chromium über Playwright für Node) |
 | `FILMZWILLING_REAL_DATA=1 pytest -m real_data` | 4 bestanden |
 | `node --test tests/js/` | 17 bestanden |
 | `ruff check`, `ruff format --check` | keine Befunde |
 | `mypy src` (strict für scale, similarity, recommender) | keine Befunde in 31 Dateien |
-| Coverage `src/filmzwilling` | 96 % (3591 Anweisungen, Zweige mitgezählt) |
+| Coverage `src/filmzwilling` | 96 % (3609 Anweisungen, Zweige mitgezählt) |
 
 Alle Läufe wurden zusätzlich in einem frischen Klon mit neuer virtueller Umgebung wiederholt
 (`pip install -e ".[dev]"`), mit demselben Ergebnis. `filmzwilling demo` lief dort mit
@@ -154,32 +154,69 @@ $ filmzwilling check "Manitou's Shoe"
 Weitere Ergebnisse: „Lola rennt“ findet „Run Lola Run“ (Rang 245, Platz 245), „Das Boot“ (1981)
 Rang 411, „Good Bye, Lenin!“ Rang 1.124, „Der Untergang“ findet „Downfall“ (Rang 1.066). Die
 deutschen Titel „Der Pate“ und „Der Schuh des Manitu“ findet die lokale Suche nicht, weil
-MovieLens sie nicht als Alternativtitel führt; das erledigt die TMDB-Suche, sobald ein Token da
-ist. Die Platzangaben gelten für eine leere Datenbank ohne Importe und Bewertungen.
+MovieLens sie nicht als Alternativtitel führt; mit TMDB klappt es (siehe unten). Die
+Platzangaben gelten für eine leere Datenbank ohne Importe und Bewertungen.
 
 `filmzwilling serve` mit den echten Daten: alle Seiten 200, die Warteschlange beginnt mit
 „The Shawshank Redemption“ und „Forrest Gump“, das Backup wird angelegt.
 
-**TMDB: offen.** In dieser Umgebung gibt es keinen Token und keinen Proxy, der einen anhängt
-(`/3/configuration` antwortet 401). Nicht live geprüft sind deshalb: deutsche Titel, Poster und
-DE-Anbieter für echte Filme, Discover, die Suche bei Importen. `filmzwilling tmdb-sync` bricht
-korrekt mit „TMDB-Token fehlt oder ist ungültig, siehe README“ ab (Exit-Code 1). Der Client ist
-gegen aufgezeichnete Antworten im echten TMDB-Format getestet (Fixtures unter
-`tests/fixtures/tmdb/`).
+**TMDB.** Anfangs gab es in der Cloud-Umgebung keinen Token (401). Am 16.11. kam der Token als
+Netzwerk-Secret dazu; der Proxy hängt ihn an, die App sendet selbst keinen Header. Danach lief der
+TMDB-Teil vollständig mit dem Client der App:
 
-### Was Florian lokal ausführen sollte
+| Film | deutscher Titel, Laufzeit | Poster | DE: Abo, gratis, mit Werbung (Auszug) |
+|---|---|---|---|
+| 238 | Der Pate, 175 Min. | ja | Paramount Plus, Joyn Plus, Magenta TV+ |
+| 27205 | Inception, 148 Min. | ja | Amazon Prime Video (auch mit Werbung), RTL+, HBO Max |
+| 582 | Das Leben der Anderen, 137 Min. | ja | HBO Max |
+| 374475 | Toni Erdmann, 162 Min. | ja | nur Leihen und Kaufen |
+| 8366 | Der Schuh des Manitu, 84 Min. | ja | HBO Max, CineMix+ Amazon Channel |
+| 104 | Lola rennt, 79 Min. | ja | ARD Plus, Magenta TV+ |
+| 338 | Good Bye, Lenin!, 121 Min. | ja | Disney Plus, Joyn Plus, HBO Max |
+| 387 | Das Boot, 150 Min. | ja | Netflix (auch mit Werbung), gratis: filmfriend |
+| 613 | Der Untergang, 156 Min. | ja | Paramount Plus, HBO Max |
+| 276 | Die fetten Jahre sind vorbei, 127 Min. | ja | ARD Plus; mit Werbung: Rakuten TV |
 
-1. Token in `.env` eintragen (siehe README).
-2. `filmzwilling check "Der Pate" --year 1972` sollte jetzt „The Godfather“ mit movieId 858 und
-   tmdbId 238 finden, ebenso `check "Der Schuh des Manitu"` den Film mit tmdbId 8366.
-3. `filmzwilling tmdb-sync --limit 50` sollte melden: mehrere Dutzend Anbieter für Deutschland,
-   „Metadaten: 50 Filme der Warteschlange aktualisiert“ und eine Zahl Neuerscheinungen zwischen
-   20 und 60. Auf der Bewertungsseite stehen dann deutsche Titel mit Postern.
-4. Für die zehn Filme aus dem Auftrag zum Beispiel
-   `curl -H "Authorization: Bearer $TMDB_READ_TOKEN" "https://api.themoviedb.org/3/movie/238?language=de-DE&append_to_response=watch/providers"`
-   oder einfach in der App unter „Empfehlungen“ nach dem nächsten `tmdb-sync`.
-5. Nach dem ersten echten Netflix-Import die Seite „Zuordnung“ ansehen: Dort sollten nur wenige
-   Titel stehen (Dokus, sehr freie Übersetzungen).
+Die zehn Abrufe dauerten zusammen 0,8 s. Die Anbieterliste für Deutschland hat 197 Einträge, die
+Voreinstellung „meine Anbieter“ ergibt 13 (Netflix mit Kids und Werbevarianten, Amazon Prime Video
+mit Werbevarianten, Disney Plus, Joyn, Joyn Plus, ARD Mediathek, ZDF, Arte, 3sat). Discover mit
+diesen Anbietern ab 1.10.2023 und mindestens 100 Stimmen: 60 Filme in 0,3 s, an der Spitze
+„Swapped – Getauscht“ (8,8) und „Der Astronaut – Project Hail Mary“ (8,6). Die Titelsuche ordnet
+„Der Pate“ (1972), „Das Leben der Anderen“, „Der Schuh des Manitu“ und „Lola rennt“ mit
+Ähnlichkeit 100 zu, „Planet der Affen“ mit Jahr 1968 dem Original (871) statt dem Remake.
+
+`filmzwilling tmdb-sync` auf den echten Daten: 58,5 s für die ganze Warteschlange (999 von 1000
+Filmen mit Metadaten, ein Film fehlt bei TMDB) und 60 Neuerscheinungen, Spitze 200 MB
+Arbeitsspeicher. `check` mit deutschem Titel:
+
+```
+$ filmzwilling check "Der Pate"
+„Der Pate“ (1972)
+  Titel in MovieLens: The Godfather
+  In MovieLens: ja (movieId 858, tmdbId 238)
+  Bewertungen: 66.440, im Schnitt 4,32 von 5 Sternen
+  Popularitätsrang: 20 von 87.585
+  Warteschlange: Platz 20 von 1000
+```
+
+`check "Der Schuh des Manitu"` findet jetzt „Manitou's Shoe“ (movieId 173627, tmdbId 8366).
+
+Mit einem echten MovieLens-Nutzer (400 Bewertungen) als Florian: Neuberechnung 1,9 s, danach
+holt die App im Hintergrund Anbieter und Metadaten für die besten 3000 Kandidaten (2776 Abrufe,
+151 s beim ersten Mal). Mit dem Standard-Anbieterfilter passen 600 Filme. Die ersten zehn: Der
+Pate (8,4), The Dark Knight (8,4), Pink Floyd: Pulse (8,4, 11 Zwillinge, 3sat), Prinzessin
+Mononoke (8,3, Netflix), Die letzten Glühwürmchen (8,3, Netflix), Der General (8,2), Zwei
+glorreiche Halunken, Der Pate Teil II, Requiem for a Dream, Chihiros Reise ins Zauberland.
+
+Die Live-Prüfung hat drei Fehler gezeigt, die jetzt behoben und getestet sind:
+
+- Empfohlene Filme außerhalb der Warteschlange hatten weder Poster noch deutschen Titel, weil nur
+  die Anbieter geholt wurden. Jetzt holt die Verfügbarkeitsabfrage für Kandidaten ohne Metadaten
+  die vollständigen Details (ein Abruf liefert beides).
+- Die Notenknöpfe auf den Kacheln waren immer sichtbar (CSS überschrieb das `hidden`-Attribut).
+- Mit 197 Anbietern war der Filter unübersichtlich. Jetzt stehen „meine Anbieter“ oben, die
+  übrigen hinter „Weitere Anbieter“. Kostenpflichtige Zusatzkanäle („ZDF Herzkino Amazon
+  Channel“) zählen nicht mehr zur Voreinstellung.
 
 ## Nur synthetisch oder mit angenommenen Formaten getestet
 
@@ -192,7 +229,6 @@ gegen aufgezeichnete Antworten im echten TMDB-Format getestet (Fixtures unter
 - Netflix `ViewingActivity.csv` und der einfache Export folgen dem dokumentierten Format, die
   Testdatei ist aber selbst gebaut.
 - Disney+: Es gibt keinen Export, daher nur die generische CSV.
-- TMDB: nur gegen Fixtures (siehe oben).
 - Die Qualitätsschranke von 15 % ist auf synthetischen Daten gemessen. Auf echten Daten liegt der
   Mittelwert bei 15 %, einzelne Nutzer liegen darunter.
 
@@ -208,6 +244,8 @@ gegen aufgezeichnete Antworten im echten TMDB-Format getestet (Fixtures unter
   fehlt). Die App erklärt den manuellen Weg (`setup --zip`).
 - Daumen-Bewertungen für Serien (Ratings.csv enthält auch Serientitel) erzeugen einen
   Importeintrag. Findet TMDB einen gleichnamigen Film, landet dieser in der Warteschlange.
+- Die erste Verfügbarkeitsabfrage für 3000 Kandidaten dauert gut zwei Minuten. Bis sie fertig ist,
+  zeigt der Standard-Anbieterfilter weniger Filme.
 - Die App hat keine Anmeldung. `serve --host 0.0.0.0` nur im eigenen Netz benutzen.
 - Die Liste der bereits verarbeiteten `client_id` liegt im Speicher. Nach einem Neustart des
   Servers wird eine noch einmal zugestellte Aktion erneut ausgeführt (praktisch nur, wenn der
@@ -215,11 +253,10 @@ gegen aufgezeichnete Antworten im echten TMDB-Format getestet (Fixtures unter
 
 ## Sinnvolle nächste Schritte
 
-1. Mit Token `tmdb-sync` laufen lassen und die offenen Punkte aus Phase 3 nachholen.
-2. Einen echten Prime-Export mit `import inspect` prüfen und die Aliasliste in
+1. Einen echten Prime-Export mit `import inspect` prüfen und die Aliasliste in
    `importers/header_aliases.py` um die echten Spaltennamen ergänzen.
-3. Nach etwa 300 eigenen Bewertungen `filmzwilling evaluate` laufen lassen und mit anderen
+2. Nach etwa 300 eigenen Bewertungen `filmzwilling evaluate` laufen lassen und mit anderen
    Werten für k, shrinkage und prior_weight vergleichen (alle in `RecommenderConfig`). Ein
    kleiner Parameter-Suchlauf über `cross_validate` wäre wenig Aufwand.
-4. Für die Sortierung eine Variante anbieten, die unsichere Vorhersagen nach unten schiebt (zum
+3. Für die Sortierung eine Variante anbieten, die unsichere Vorhersagen nach unten schiebt (zum
    Beispiel nach der Untergrenze eines Konfidenzintervalls statt nach dem Punktwert).

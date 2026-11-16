@@ -326,3 +326,35 @@ def test_config_is_used(
     svc.sync_movielens_films()
     rate_movielens(svc, florian_ratings)
     assert svc.recompute()["count"] == 0
+
+
+def test_availability_also_fetches_missing_metadata(
+    tmp_path: Path, synthetic_data, synthetic_ds: SyntheticDataset
+) -> None:
+    import httpx
+
+    from conftest import load_json, tmdb_fixture_handler
+
+    template = load_json("movie_27205.json")
+    extra: dict[str, object] = {}
+    for tmdb_id in synthetic_ds.links["tmdbId"].dropna():
+        payload = dict(template)
+        payload.update(
+            {"id": int(tmdb_id), "title": f"Deutscher Titel {int(tmdb_id)}", "runtime": 99}
+        )
+        extra[f"/movie/{int(tmdb_id)}"] = payload
+    settings = Settings(data_dir=tmp_path / "meta", offline=False)
+    svc = FilmService(
+        settings, data=synthetic_data, transport=httpx.MockTransport(tmdb_fixture_handler(extra))
+    )
+    svc.sync_movielens_films()
+    rate_movielens(svc, synthetic_user_ratings(synthetic_ds, 0, n=40, seed=5))
+    svc.recompute()
+    svc.wait_for_background(timeout=60)  # the availability refresh starts after recompute
+    top = svc.recommendations(RecFilter(providers=frozenset({8})), limit=5)["items"]
+    assert top, "films with Netflix offers expected after the background refresh"
+    for item in top:
+        assert item["title"].startswith("Deutscher Titel")
+        assert item["runtime"] == 99
+        assert item["poster_url"].startswith("https://image.tmdb.org/")
+    assert asyncio.run(svc.refresh_availability(limit=5, force=False)) == 0  # all fresh now

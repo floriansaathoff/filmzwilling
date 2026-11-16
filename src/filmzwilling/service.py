@@ -87,6 +87,7 @@ class CheckResult:
     queue_position: int | None = None
     queue_size: int | None = None
     queue_status: str | None = None
+    movielens_title: str | None = None
     own_rating: int | None = None
     note: str | None = None
 
@@ -666,6 +667,8 @@ class FilmService:
         if film_id is not None:
             own = self.repo.get_rating(film_id)
             position = next((i + 1 for i, e in enumerate(queue) if e.film_id == film_id), None)
+        film = self.repo.get_film(film_id) if film_id is not None else None
+        german_title = film.title if film is not None and film.title else None
         queue_size = self.repo.get_user_settings().queue_size
         if tmdb_id is None:
             queue_status = "nicht möglich (keine tmdbId in links.csv)"
@@ -685,7 +688,8 @@ class FilmService:
             query=title,
             found=True,
             movielens_id=ml_id,
-            title=clean_ml_title(str(row["title"])),
+            title=german_title or clean_ml_title(str(row["title"])),
+            movielens_title=clean_ml_title(str(row["title"])),
             year=None if str(row["year"]) == "<NA>" else int(row["year"]),
             tmdb_id=tmdb_id,
             rating_count=int(row["count"]),
@@ -811,16 +815,27 @@ class FilmService:
         ]
         films = self.repo.get_films(candidate_ids)
         chosen = [fid for fid in candidate_ids if films[fid].tmdb_id is not None][:limit]
-        if not force:
-            chosen = self.repo.films_missing_offers(chosen)
+        # Candidates outside the rating queue usually have no metadata yet (no poster, no German
+        # title): for those one full details call also returns the providers.
+        needs_meta = set(self.repo.films_missing_metadata(chosen))
+        stale_offers = set(chosen) if force else set(self.repo.films_missing_offers(chosen))
+        chosen = [fid for fid in chosen if fid in needs_meta or fid in stale_offers]
         if not chosen:
             return 0
+
+        async def fetch(client: TMDBClient, film_id: int) -> tuple[int, MovieDetails | None, Any]:
+            tmdb_id = films[film_id].tmdb_id or 0
+            if film_id in needs_meta:
+                return film_id, await client.movie(tmdb_id, force=force), None
+            return film_id, None, await client.movie_offers(tmdb_id, force=force)
+
         async with self._client() as client:
-            offers = await asyncio.gather(
-                *(client.movie_offers(films[fid].tmdb_id or 0, force=force) for fid in chosen)
-            )
-        for film_id, film_offers in zip(chosen, offers, strict=True):
-            self.repo.set_film_offers(film_id, film_offers)
+            results = await asyncio.gather(*(fetch(client, fid) for fid in chosen))
+        for film_id, details, offers in results:
+            if details is not None:
+                self._store_details(details)
+            else:
+                self.repo.set_film_offers(film_id, offers or [])
         self._items_cache = None
         return len(chosen)
 
