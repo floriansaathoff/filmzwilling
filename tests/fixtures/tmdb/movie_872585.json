@@ -1,0 +1,43 @@
+{
+ "genres": [
+  {
+   "id": 18,
+   "name": "Drama"
+  },
+  {
+   "id": 36,
+   "name": "Historie"
+  }
+ ],
+ "id": 872585,
+ "original_title": "Oppenheimer",
+ "popularity": 150.0,
+ "poster_path": "/opp.jpg",
+ "release_date": "2023-07-19",
+ "runtime": 181,
+ "title": "Oppenheimer",
+ "vote_average": 8.1,
+ "vote_count": 9000,
+ "watch/providers": {
+  "results": {
+   "DE": {
+    "flatrate": [
+     {
+      "logo_path": "/prime.jpg",
+      "provider_id": 9,
+      "provider_name": "Amazon Prime Video",
+      "display_priority": 1
+     }
+    ],
+    "rent": [
+     {
+      "logo_path": "/apple.jpg",
+      "provider_id": 2,
+      "provider_name": "Apple TV",
+      "display_priority": 4
+     }
+    ]
+   }
+  }
+ }
+}

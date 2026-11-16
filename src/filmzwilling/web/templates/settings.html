@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Einstellungen{% endblock %}
+{% block content %}
+<section class="settings" id="settings-app">
+  <h1>Einstellungen</h1>
+  <form id="settings-form" class="settings-form">
+    <fieldset>
+      <legend>Meine Profile</legend>
+      <p class="muted">Welche importierten Profile bist du? Ohne Auswahl zählen alle Profile als deine.</p>
+      <div id="profiles" class="check-list"></div>
+    </fieldset>
+    <fieldset>
+      <legend>Meine Anbieter</legend>
+      <p class="muted">Standard für den Anbieterfilter der Empfehlungen (Abo, gratis und mit Werbung).</p>
+      <div id="providers" class="check-list providers"></div>
+    </fieldset>
+    <fieldset>
+      <legend>Warteschlange</legend>
+      <label>Beliebte MovieLens-Filme in der Warteschlange <input type="number" name="queue_size" id="queue-size" min="0" max="100000" step="50"></label>
+    </fieldset>
+    <button type="submit">Speichern</button> <span id="settings-status" class="muted" aria-live="polite"></span>
+  </form>
+
+  <section class="evaluation">
+    <h2>So gut kennt dich die App</h2>
+    <div id="evaluation">
+      {% if evaluation %}
+      <p>5-fache Kreuzvalidierung über {{ evaluation.n_ratings }} eigene Bewertungen:
+        RMSE {{ '%.2f' | format(evaluation.rmse) | replace('.', ',') }} (Filmdurchschnitt: {{ '%.2f' | format(evaluation.baseline_rmse) | replace('.', ',') }}),
+        Spearman {{ '%.2f' | format(evaluation.spearman) | replace('.', ',') }} (Filmdurchschnitt: {{ '%.2f' | format(evaluation.baseline_spearman) | replace('.', ',') }}).</p>
+      {% else %}
+      <p class="muted">Noch nicht ausgewertet.</p>
+      {% endif %}
+    </div>
+    <button type="button" id="run-evaluate" class="secondary">Selbsttest starten</button>
+  </section>
+
+  <section>
+    <h2>Empfehlungen</h2>
+    <p class="muted" id="recs-info">{% if meta %}Zuletzt berechnet am {{ meta.computed_at[:16].replace('T', ' ') }} ({{ meta.rating_count }} Bewertungen, {{ meta.duration_seconds }} s).{% else %}Noch nicht berechnet.{% endif %}</p>
+    <button type="button" id="recompute">Empfehlungen neu berechnen</button>
+  </section>
+</section>
+{% endblock %}
+{% block scripts %}<script type="module" src="/static/js/settings.js?v={{ version }}"></script>{% endblock %}

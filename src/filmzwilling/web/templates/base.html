@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0f1115">
+  <title>{% block title %}Filmzwilling{% endblock %} · Filmzwilling</title>
+  <link rel="stylesheet" href="/static/css/app.css?v={{ version }}">
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+</head>
+<body data-page="{{ active }}">
+  <header class="topbar">
+    <a class="brand" href="/">Film<span>zwilling</span></a>
+    <nav class="nav" aria-label="Hauptnavigation">
+      {% for href, label, key in nav %}
+      <a href="{{ href }}" class="{{ 'active' if key == active else '' }}"{% if key == active %} aria-current="page"{% endif %}>{{ label }}</a>
+      {% endfor %}
+    </nav>
+  </header>
+  <main class="main">
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="footer">
+    <p>{{ footer }}</p>
+    <p class="muted">Bewertungsdaten: MovieLens 32M (GroupLens), nur zur persönlichen Nutzung.</p>
+  </footer>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,31 @@
+# Data directory: MovieLens, databases, exports, backups (never commit!)
+data/
+*.sqlite
+*.sqlite3
+*.db
+*.zip
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+
+# Tooling
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# Editors / OS
+.idea/
+.vscode/
+.DS_Store

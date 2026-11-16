@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Zwillinge{% endblock %}
+{% block content %}
+<section class="twins">
+  <h1>Zwillinge</h1>
+  <p class="muted">Die 20 MovieLens-Nutzer mit dem ähnlichsten Geschmack (angepasste Kosinus-Ähnlichkeit über gemeinsam bewertete Filme, gewichtet nach Anzahl gemeinsamer Filme).</p>
+  {% if twins %}
+  <table class="table">
+    <thead><tr><th>#</th><th>Nutzer</th><th>Ähnlichkeit</th><th>Gemeinsam</th><th>Größte Übereinstimmung</th></tr></thead>
+    <tbody>
+      {% for t in twins %}
+      <tr>
+        <td>{{ t.label }}</td>
+        <td class="muted">{{ t.user_label }}</td>
+        <td>{{ t.similarity_text }}</td>
+        <td>{{ t.overlap }} Filme</td>
+        <td>{% for m in t.top_movies %}<span class="chip">{{ m.title }}: du {{ m.your_score }}, Zwilling {{ m.their_score | string | replace('.', ',') }}</span>{% endfor %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="notice">Noch keine Zwillinge berechnet. Bewerte mindestens 30 Filme und berechne die <a href="/empfehlungen">Empfehlungen</a>.</p>
+  {% endif %}
+</section>
+{% endblock %}

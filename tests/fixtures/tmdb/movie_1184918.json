@@ -1,0 +1,35 @@
+{
+ "genres": [
+  {
+   "id": 16,
+   "name": "Animation"
+  },
+  {
+   "id": 878,
+   "name": "Science Fiction"
+  }
+ ],
+ "id": 1184918,
+ "original_title": "The Wild Robot",
+ "popularity": 200.0,
+ "poster_path": "/robot.jpg",
+ "release_date": "2024-09-12",
+ "runtime": 102,
+ "title": "Der wilde Roboter",
+ "vote_average": 8.3,
+ "vote_count": 3000,
+ "watch/providers": {
+  "results": {
+   "DE": {
+    "rent": [
+     {
+      "logo_path": "/apple.jpg",
+      "provider_id": 2,
+      "provider_name": "Apple TV",
+      "display_priority": 4
+     }
+    ]
+   }
+  }
+ }
+}

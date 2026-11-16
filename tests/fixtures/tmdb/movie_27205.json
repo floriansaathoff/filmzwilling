@@ -1,0 +1,95 @@
+{
+ "adult": false,
+ "backdrop_path": "/back.jpg",
+ "budget": 160000000,
+ "genres": [
+  {
+   "id": 28,
+   "name": "Action"
+  },
+  {
+   "id": 878,
+   "name": "Science Fiction"
+  },
+  {
+   "id": 12,
+   "name": "Abenteuer"
+  }
+ ],
+ "id": 27205,
+ "imdb_id": "tt1375666",
+ "original_language": "en",
+ "original_title": "Inception",
+ "overview": "Dom Cobb ist ein Dieb ...",
+ "popularity": 98.5,
+ "poster_path": "/inception.jpg",
+ "release_date": "2010-07-15",
+ "runtime": 148,
+ "status": "Released",
+ "title": "Inception",
+ "vote_average": 8.369,
+ "vote_count": 37000,
+ "watch/providers": {
+  "results": {
+   "DE": {
+    "link": "https://www.themoviedb.org/movie/27205-inception/watch?locale=DE",
+    "flatrate": [
+     {
+      "logo_path": "/netflix.jpg",
+      "provider_id": 8,
+      "provider_name": "Netflix",
+      "display_priority": 0
+     }
+    ],
+    "free": [
+     {
+      "logo_path": "/ard.jpg",
+      "provider_id": 219,
+      "provider_name": "ARD Mediathek",
+      "display_priority": 30
+     }
+    ],
+    "ads": [
+     {
+      "logo_path": "/netflixads.jpg",
+      "provider_id": 1796,
+      "provider_name": "Netflix basic with Ads",
+      "display_priority": 5
+     }
+    ],
+    "rent": [
+     {
+      "logo_path": "/amazonvideo.jpg",
+      "provider_id": 10,
+      "provider_name": "Amazon Video",
+      "display_priority": 10
+     }
+    ],
+    "buy": [
+     {
+      "logo_path": "/apple.jpg",
+      "provider_id": 2,
+      "provider_name": "Apple TV",
+      "display_priority": 4
+     },
+     {
+      "logo_path": "/amazonvideo.jpg",
+      "provider_id": 10,
+      "provider_name": "Amazon Video",
+      "display_priority": 10
+     }
+    ]
+   },
+   "US": {
+    "flatrate": [
+     {
+      "logo_path": "/max.jpg",
+      "provider_id": 1899,
+      "provider_name": "Max",
+      "display_priority": 1
+     }
+    ]
+   }
+  }
+ }
+}

@@ -1,0 +1,4 @@
+Date Watched,Type,Title,Episode Title,Global Title Identifier,Episode Global Title Identifier,Path,Episode Path,Image URL
+2024-05-01,Movie,Oppenheimer,,amzn1.dv.gti.aaa,,/detail/aaa,,https://example.invalid/a.jpg
+2024-05-02,Series,The Boys,Das Gesetz der Wildnis,amzn1.dv.gti.bbb,amzn1.dv.gti.ccc,/detail/bbb,/detail/ccc,https://example.invalid/b.jpg
+2024-05-03,Movie,Saltburn,,amzn1.dv.gti.ddd,,/detail/ddd,,https://example.invalid/d.jpg

@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Empfehlungen{% endblock %}
+{% block content %}
+<section class="recs" id="recs-app"
+  data-default-providers="{{ default_providers | join(',') }}"
+  data-min-ratings="{{ min_ratings }}" data-rating-count="{{ rating_count }}">
+  <div class="page-head">
+    <h1>Empfehlungen</h1>
+    <div class="head-actions">
+      <button type="button" id="recompute">Empfehlungen neu berechnen</button>
+      <button type="button" id="refresh-availability" class="secondary">Verfügbarkeit aktualisieren</button>
+    </div>
+  </div>
+  {% if not has_data %}
+  <p class="notice">MovieLens-Daten fehlen. Bitte zuerst <code>filmzwilling setup</code> ausführen.</p>
+  {% elif rating_count < min_ratings %}
+  <p class="notice" id="too-few">Bewerte mindestens {{ min_ratings }} Filme, dann erscheinen hier Empfehlungen. Bisher: {{ rating_count }}. <a href="/">Jetzt bewerten</a></p>
+  {% endif %}
+  <p class="muted" id="recs-meta">{% if meta %}Berechnet am {{ meta.computed_at[:16].replace('T', ' ') }} aus {{ meta.rating_count }} Bewertungen, {{ meta.n_twins }} Zwillinge.{% endif %}</p>
+
+  <form class="filters" id="filters">
+    <fieldset class="filter-group providers">
+      <legend>Anbieter</legend>
+      <label class="check"><input type="checkbox" name="providers_any" id="providers-any"> alle (auch ohne Anbieterdaten)</label>
+      {% macro provider_box(p) %}<label class="check provider"><input type="checkbox" name="providers" value="{{ p.id }}">{% if p.logo_url %}<img src="{{ p.logo_url }}" alt="" loading="lazy">{% endif %}{{ p.name }}</label>{% endmacro %}
+      <div class="provider-list">
+        {% for p in my_providers %}{{ provider_box(p) }}{% endfor %}
+      </div>
+      {% if other_providers %}
+      <details class="more-providers">
+        <summary>Weitere Anbieter ({{ other_providers | length }})</summary>
+        <div class="provider-list">
+          {% for p in other_providers %}{{ provider_box(p) }}{% endfor %}
+        </div>
+      </details>
+      {% endif %}
+      <label class="check"><input type="checkbox" name="rent_buy" value="1"> Leihen und Kaufen zeigen</label>
+    </fieldset>
+    <fieldset class="filter-group">
+      <legend>Genres</legend>
+      <div class="genre-list">
+        {% for g in genres %}<label class="check"><input type="checkbox" name="genres" value="{{ g }}">{{ g }}</label>{% endfor %}
+      </div>
+      <label class="check"><input type="checkbox" name="genre_mode" value="and"> alle gewählten Genres (UND)</label>
+    </fieldset>
+    <fieldset class="filter-group numbers">
+      <legend>Weitere Filter</legend>
+      <label>Mindest-Match <input type="number" name="min_score" min="0" max="10" step="0.1" inputmode="decimal"></label>
+      <label>Mindestens Zwillinge <input type="number" name="min_support" min="0" step="1"></label>
+      <label>Jahr von <input type="number" name="year_from" min="1900" max="2100"></label>
+      <label>bis <input type="number" name="year_to" min="1900" max="2100"></label>
+      <label>max. Laufzeit (Min.) <input type="number" name="max_runtime" min="0" step="5"></label>
+      <label>Sortierung
+        <select name="sort">
+          <option value="match">Match</option>
+          <option value="year">Jahr</option>
+          <option value="tmdb">TMDB-Note</option>
+        </select>
+      </label>
+    </fieldset>
+  </form>
+
+  <p class="muted" id="recs-count"></p>
+  <div class="grid" id="recs-grid" aria-live="polite"></div>
+
+  <h2 class="section-title">Neu seit Ende 2023 (ohne Zwillingsdaten)</h2>
+  <p class="notice subtle">Diese Filme sind nicht personalisiert: Für sie gibt es noch keine MovieLens-Bewertungen. Sortiert nach TMDB-Note, mit denselben Filtern.</p>
+  <div class="head-actions"><button type="button" id="refresh-new" class="secondary">Neuerscheinungen laden</button></div>
+  <div class="grid" id="new-grid"></div>
+</section>
+{% endblock %}
+{% block scripts %}<script type="module" src="/static/js/recs.js?v={{ version }}"></script>{% endblock %}

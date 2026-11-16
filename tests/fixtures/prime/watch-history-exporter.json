@@ -1,0 +1,30 @@
+[
+ {
+  "dateWatched": "2024-05-01T20:00:00.000Z",
+  "type": "movie",
+  "title": "Oppenheimer",
+  "episodeTitle": null,
+  "gti": "amzn1.dv.gti.aaa"
+ },
+ {
+  "dateWatched": "2024-05-02T20:00:00.000Z",
+  "type": "episode",
+  "title": "The Boys",
+  "episodeTitle": "Das Gesetz der Wildnis",
+  "gti": "amzn1.dv.gti.bbb"
+ },
+ {
+  "dateWatched": "2024-05-04T20:00:00.000Z",
+  "type": "movie",
+  "title": "Oppenheimer",
+  "episodeTitle": null,
+  "gti": "amzn1.dv.gti.aaa"
+ },
+ {
+  "dateWatched": "2024-05-05T20:00:00.000Z",
+  "type": "movie",
+  "title": "Anatomie eines Falls",
+  "episodeTitle": null,
+  "gti": "amzn1.dv.gti.eee"
+ }
+]

@@ -1,0 +1,12 @@
+# Example mapping override for "filmzwilling import prime --mapping"
+[columns]
+title = "Sendung"
+date = "Wann"
+profile = "Wer"
+duration = "Minuten"
+
+[units]
+duration = "minutes"
+
+[defaults]
+profile = "Prime Video"

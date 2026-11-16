@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Meine Bewertungen{% endblock %}
+{% block content %}
+<section class="ratings" id="ratings-app">
+  <div class="page-head">
+    <h1>Meine Bewertungen</h1>
+    <div class="head-actions"><a class="button secondary" href="/api/ratings/export.csv" download>CSV exportieren</a></div>
+  </div>
+  <p class="muted"><span id="ratings-count">{{ count }}</span> Bewertungen</p>
+  <label class="search"><span class="visually-hidden">Suche</span><input type="search" id="rating-search" placeholder="Titel suchen …" autocomplete="off"></label>
+  <table class="table" id="ratings-table">
+    <thead><tr><th></th><th>Titel</th><th>Jahr</th><th>Note</th><th></th></tr></thead>
+    <tbody></tbody>
+  </table>
+</section>
+{% endblock %}
+{% block scripts %}<script type="module" src="/static/js/ratings.js?v={{ version }}"></script>{% endblock %}
