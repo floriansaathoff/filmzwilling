@@ -62,7 +62,9 @@ filmzwilling demo                               # App mit synthetischen Daten, o
 - TMDB-Token ist optional: ohne `TMDB_READ_TOKEN` gehen Requests ohne Auth-Header raus (ein Proxy
   kann ihn anhängen). Erst ein 401 führt zur deutschen Fehlermeldung.
 - `FILMZWILLING_OFFLINE=1` schaltet TMDB ab; Demo-Ordner sind immer offline.
-- Frontend-Logik ohne DOM in `web/static/js/keys.js` und `queue.js`, mit `node --test` getestet.
+- Frontend-Logik ohne DOM in `web/static/js/keys.js`, `queue.js`, `media.js` und `pad.js`, mit
+  `node --test` getestet. Design: Abyss (MIT), siehe `docs/ENTSCHEIDUNGEN.md`; Trailer-Player in
+  `player.js`, Controller in `gamepad.js`.
   Keine npm-Abhängigkeiten, kein Build-Schritt.
 - ruff (Zeilenlänge 100) und mypy müssen sauber bleiben, Coverage mindestens 90 %.
 

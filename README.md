@@ -183,6 +183,7 @@ wiederholt. Beim Verlassen der Seite schickt der Browser offene Aktionen noch ab
 | Leertaste | nicht gesehen |
 | `S` | später (ans Ende) |
 | Backspace | rückgängig (auch mehrmals) |
+| `T` | Trailer abspielen |
 
 Die Tasten wirken nicht, solange ein Eingabefeld aktiv ist. Bei abgebrochenen Filmen steht auf
 der Karte zum Beispiel „Abgebrochen bei 28 % (34 von 121 Min.), Profil Florian“, und die Buttons
@@ -201,14 +202,57 @@ filmzwilling serve --host 0.0.0.0
 Dann auf dem Handy `http://<IP-des-Rechners>:8000` öffnen. Die App hat keine Anmeldung, also nur
 im eigenen Heimnetz so starten.
 
+## Trailer
+
+Auf der Bewertungsseite, in den Empfehlungen (Kachel oder Detailansicht) und unter „Meine
+Bewertungen“ startet „Trailer“ den Film-Trailer direkt in der App. Die Trailer kommen über TMDB
+(deutsche zuerst, dann englische), der Stream kommt von YouTube (eingebettet über
+youtube-nocookie.com, ohne YouTube-Bedienelemente). Gibt es mehrere, wechselst du oben im Player.
+
+| Taste | Aktion im Player |
+|---|---|
+| Leertaste oder `K` | Abspielen/Pause |
+| `←` `→` oder `J` `L` | 10 Sekunden zurück/vor |
+| `↑` `↓` | Lautstärke |
+| `M` | Ton an/aus |
+| `F` | Vollbild |
+| `N` | nächster Trailer |
+| Esc | schließen |
+
+Ohne Netz (oder im Demo-Modus) gibt es keine Trailer. Manche Studios verbieten das Einbetten;
+dann springt der Player zum nächsten Trailer oder bietet als letzten Ausweg den Link zu YouTube an.
+
+## Controller
+
+Ein Gamepad (Xbox, PlayStation, Switch Pro, alles mit Standard-Belegung im Browser) wird
+erkannt, sobald du im Browserfenster eine Taste drückst. Oben rechts erscheint dann ein
+Controller-Symbol.
+
+| Taste | Aktion |
+|---|---|
+| Steuerkreuz oder linker Stick | Auswahl bewegen (auf der Bewertungsseite startet sie bei Note 5) |
+| A (Kreuz) | auswählen, bewerten |
+| B (Kreis) | zurück, schließen; beim Bewerten rückgängig |
+| X (Quadrat) | nicht gesehen |
+| Y (Dreieck) | Trailer |
+| RT | später |
+| LB / RB | vorherige / nächste Seite |
+| rechter Stick | scrollen |
+| Select / View | Hilfe mit der Belegung |
+
+Im Trailer: A oder Start Pause, links/rechts 10 Sekunden, LT/RT 30 Sekunden, hoch/runter
+Lautstärke, X Ton, Y Vollbild, LB/RB Trailer wechseln, B schließen.
+
 ## Empfehlungen
 
 Ab 30 eigenen Bewertungen erscheint eine Liste. Neu berechnet wird per Knopf, mit
 `filmzwilling recommend` und automatisch im Hintergrund nach je 25 neuen Bewertungen. Die
 Berechnung dauert mit dem vollen Datensatz etwa 2 Sekunden.
 
-Jede Kachel zeigt die vorhergesagte Note (zum Beispiel „8,7“), wie viele Zwillinge den Film
-bewertet haben und deren Schnitt, die Anbieter, Genres und Laufzeit. Filter (Anbieter, Genres mit
+Oben laufen die fünf besten Empfehlungen als großes Banner durch. Jede Kachel zeigt das Poster
+mit der vorhergesagten Note (zum Beispiel „8,7“) und den Anbietern, darunter Titel, Jahr,
+Laufzeit und wie viele Zwillinge den Film bewertet haben. Ein Klick öffnet die Detailansicht mit
+Handlung, Trailer, Bewerten und „Kein Interesse“. Die Filter öffnest du mit „Filter“. Filter (Anbieter, Genres mit
 ODER oder UND, Mindest-Match, Mindestzahl Zwillinge, Jahr, Laufzeit, Leihen und Kaufen) stehen in
 der URL, ein Lesezeichen behält sie. Ein Tipp: Mit „Mindestens Zwillinge“ 20 verschwinden
 Exoten, die nur wenige Leute gesehen haben.

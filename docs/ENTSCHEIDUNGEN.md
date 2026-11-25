@@ -205,3 +205,28 @@ oder „[4K UHD]“ werden vor der Suche entfernt. TMDB-Ergebnisse mit `media_ty
 - Zeitstempel in der Datenbank sind UTC.
 - Die Starlette-Warnung, dass der TestClient lieber das Paket `httpx2` hätte, ist in der
   pytest-Konfiguration ausgeblendet. Die App selbst nutzt `httpx`.
+
+## Oberfläche im Abyss-Design, Trailer, Controller
+
+- Das Design folgt [Abyss for Jellyfin](https://github.com/AumGupta/abyss-jellyfin) von Om Gupta
+  (MIT-Lizenz, erlaubt Kopieren und Ändern mit Lizenzhinweis). Abyss ist ein Stylesheet für
+  Jellyfin-Klassen, die es hier nicht gibt. Übernommen sind deshalb die Gestaltung und die Werte
+  (Farben, Glas mit `backdrop-filter`, Radien, Easing-Kurven, Pill-Tabs, Spotlight-Banner mit
+  Maske, Meta-Pills, Karten mit Fokusrahmen, Player-OSD), die Selektoren sind für das eigene Markup
+  neu geschrieben. Lizenztext: `web/static/css/ABYSS-LICENSE.txt`, Hinweis im Footer. Schrift wie
+  bei Abyss: Google Sans über Google Fonts (ohne Netz fällt sie auf die Systemschrift zurück).
+  Icons: Material Icons (Apache 2.0) als SVG-Sprite `web/static/icons.svg`, kein Icon-Font.
+- Trailer: `GET /api/films/{id}/media` liefert Backdrop, Handlung und YouTube-Trailer
+  (TMDB `/movie/{id}/videos`, `include_video_language=de,en,null`, 14 Tage im Cache). Sortierung:
+  Trailer vor Teaser, Deutsch vor anderen Sprachen, offiziell vor Fan-Uploads, höhere Auflösung.
+  Offline kommt nur, was schon im Cache liegt. TMDB-Fehler machen nur die Trailerliste leer.
+- Player: YouTube IFrame API mit `controls=0` über youtube-nocookie.com, eigene Bedienung. Über
+  dem iframe liegt eine Fläche, die Klicks abfängt (Pause/Abspielen) und im Pausenzustand die
+  YouTube-Vorschläge verdeckt. Blockiert der Browser Autoplay mit Ton (z. B. beim Öffnen mit dem
+  Controller, der nicht als Nutzeraktion zählt), startet der Trailer stumm mit Hinweis.
+- Controller: Gamepad API mit Standard-Belegung, Abfrage per `requestAnimationFrame` nur solange
+  ein Gamepad verbunden ist. Logik ohne DOM in `pad.js` (Tastenflanken, Wiederholung beim
+  Halten, räumliche Navigation über Rechtecke) mit `node --test` getestet. Seiten können Tasten über
+  das abbrechbare Event `fz:pad` übernehmen; der Rest ist Fokus-Navigation.
+- Der Browsertest `tests/e2e/player_pad.mjs` ersetzt die YouTube-API und `navigator.getGamepads`
+  durch Attrappen, weil Tests ohne Netz und ohne echtes Gamepad laufen müssen.
