@@ -1,7 +1,7 @@
 // Recommendations page: spotlight carousel of the top films, Abyss poster grid, film sheet,
 // filters stored in the URL and the new-releases section.
 import { el, formatNumber, getJSON, postJSON, toast } from "./api.js";
-import { stepNumber } from "./pad.js";
+import { setupFilterPanel } from "./filterpanel.js";
 import { openTrailer } from "./player.js";
 import { openSheet } from "./sheet.js";
 import { fadeImage, icon, loadMedia, setAmbient } from "./ui.js";
@@ -28,7 +28,7 @@ function readUrl() {
   form.querySelectorAll('input[name="exclude_genres"]').forEach((box) => { box.checked = excluded.has(box.value); });
   form.elements.rent_buy.checked = params.get("rent_buy") === "1";
   form.elements.genre_mode.checked = params.get("genre_mode") === "and";
-  for (const name of ["min_score", "min_support", "year_from", "year_to", "max_runtime"]) {
+  for (const name of ["min_score", "min_support", "year_from", "year_to", "min_runtime", "max_runtime"]) {
     form.elements[name].value = params.get(name) || "";
   }
   form.elements.sort.value = params.get("sort") || "match";
@@ -48,7 +48,7 @@ function currentParams() {
   const excluded = [...form.querySelectorAll('input[name="exclude_genres"]:checked')].map((b) => b.value);
   params.set("exclude_genres", excluded.join(","));
   if (form.elements.rent_buy.checked) params.set("rent_buy", "1");
-  for (const name of ["min_score", "min_support", "year_from", "year_to", "max_runtime"]) {
+  for (const name of ["min_score", "min_support", "year_from", "year_to", "min_runtime", "max_runtime"]) {
     const value = form.elements[name].value.trim();
     if (value) params.set(name, value);
   }
@@ -92,20 +92,11 @@ function tile(item, { personalized }) {
   const badge = personalized
     ? el("span", { class: "tile-match", title: item.support_text }, item.score_text)
     : el("span", { class: "tile-match", title: "TMDB-Note" }, item.vote_average ? formatNumber(item.vote_average) : "–", el("small", { text: "TMDB" }));
-  const play = el("button", {
-    type: "button", class: "btn-round", title: "Trailer abspielen", "aria-label": `Trailer: ${item.title}`, tabindex: "-1",
-    onclick: (e) => { e.stopPropagation(); openTrailer(item); },
-  }, icon("play"));
-  const info = el("button", {
-    type: "button", class: "btn-round", title: "Details", "aria-label": `Details: ${item.title}`, tabindex: "-1",
-    onclick: (e) => { e.stopPropagation(); openSheet(item, actionsFor(item, node)); },
-  }, icon("info"));
   node.append(
     el("div", { class: "tile-art" },
       el("img", { class: "tile-poster", src: item.poster_url, alt: "", loading: "lazy" }),
       badge,
-      offersNode(item, form.elements.rent_buy.checked),
-      el("div", { class: "tile-overlay" }, play, info)),
+      offersNode(item, form.elements.rent_buy.checked)),
     el("h3", { class: "tile-title", text: item.title, title: item.title }),
     el("p", { class: "tile-meta", text: [item.year, item.runtime ? `${item.runtime} Min.` : null].filter(Boolean).join(" · ") }),
     personalized && item.reason ? el("p", { class: "tile-reason", text: item.reason }) : null,
@@ -283,46 +274,15 @@ button("refresh-availability", "/api/availability/refresh", "Verfügbarkeit aktu
 button("refresh-new", "/api/new-releases/refresh", "Neuerscheinungen geladen");
 
 const toggle = document.getElementById("toggle-filters");
-function showFilters(open, { focus = false } = {}) {
-  form.hidden = !open;
-  toggle.setAttribute("aria-expanded", String(open));
-  sessionStorage.setItem("fz-filters-open", open ? "1" : "0");
-  if (open && focus) form.querySelector("input, summary, button")?.focus({ focusVisible: true });
-  if (!open && focus) toggle.focus({ focusVisible: true });
-}
-toggle.addEventListener("click", () => showFilters(form.hidden, { focus: document.body.classList.contains("pad-mode") }));
-showFilters(sessionStorage.getItem("fz-filters-open") === "1");
-document.getElementById("close-filters").addEventListener("click", () => showFilters(false, { focus: true }));
-
-function resetFilters() {
-  history.replaceState(null, "", location.pathname);
-  readUrl();
-  load();
-  toast("Filter zurückgesetzt");
-}
-document.getElementById("reset-filters").addEventListener("click", resetFilters);
-
-// Steppers: big -/+ buttons for the number filters (controller friendly; typing still works).
-form.querySelectorAll(".stepper").forEach((box) => {
-  const input = box.querySelector("input");
-  const opts = { step: Number(box.dataset.step), start: Number(box.dataset.start), min: Number(box.dataset.min), max: Number(box.dataset.max) };
-  box.querySelectorAll(".step-btn").forEach((button) =>
-    button.addEventListener("click", () => {
-      input.value = stepNumber(input.value, Number(button.dataset.dir), opts);
-      input.dispatchEvent(new Event("input", { bubbles: true }));
-    }));
-});
-
-// Controller: Start opens/closes the filters, X inside the filters resets them.
-document.addEventListener("fz:pad", (event) => {
-  const { button } = event.detail;
-  if (button === "start") {
-    event.preventDefault();
-    showFilters(form.hidden, { focus: true });
-  } else if (button === "x" && !form.hidden && form.contains(document.activeElement)) {
-    event.preventDefault();
-    resetFilters();
-  }
+setupFilterPanel({
+  form,
+  toggle,
+  storageKey: "fz-filters-open",
+  onReset: () => {
+    history.replaceState(null, "", location.pathname);
+    readUrl();
+    load();
+  },
 });
 
 readUrl();

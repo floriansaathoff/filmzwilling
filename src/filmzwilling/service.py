@@ -591,11 +591,18 @@ class FilmService:
         show: str = "all",
         offset: int = 0,
         limit: int = 120,
+        genres: list[str] | None = None,
+        year_from: int | None = None,
+        year_to: int | None = None,
+        min_score: float | None = None,
+        min_runtime: int | None = None,
+        max_runtime: int | None = None,
     ) -> dict[str, Any] | None:
         """All MovieLens ratings of one twin (paged), with your own note where you have one.
 
         sort: "score" (best first), "low" (worst first), "title". show: "all", "common" (films
-        you rated too), "new" (films you have not rated).
+        you rated too), "new" (films you have not rated). genres (any of them), year_from,
+        year_to and min_score (the twin's note) narrow the list further.
         """
         twin = next((t for t in self.repo.load_twins() if t.rank == rank), None)
         data = self.data()
@@ -620,6 +627,33 @@ class FilmService:
             sel = np.flatnonzero(~common)
         else:
             sel = np.arange(len(cols))
+        if min_score is not None:
+            sel = sel[notes[sel] >= min_score - 1e-9]
+        ml_map = self.repo.movielens_film_map()
+        ranges = (year_from, year_to, min_runtime, max_runtime)
+        if genres or any(v is not None for v in ranges):
+            wanted = set(genres or [])
+            ids = {int(i): ml_map.get(int(movie_ids[i])) for i in sel}
+            films_all = self.repo.get_films(f for f in ids.values() if f is not None)
+
+            def keep(i: int) -> bool:
+                film_id = ids[i]
+                film = films_all.get(film_id) if film_id is not None else None
+                if film is None:
+                    return False
+                year = film.display_year
+                if year_from is not None and (year is None or year < year_from):
+                    return False
+                if year_to is not None and (year is None or year > year_to):
+                    return False
+                runtime = film.runtime
+                if min_runtime is not None and (runtime is None or runtime < min_runtime):
+                    return False
+                if max_runtime is not None and (runtime is None or runtime > max_runtime):
+                    return False
+                return not wanted or bool(wanted & set(film.display_genres))
+
+            sel = np.array([i for i in sel if keep(int(i))], dtype=np.int64)
         if sort == "title":
             order = sel[np.argsort(titles[sel].astype(str), kind="stable")]
         elif sort == "low":
@@ -627,7 +661,6 @@ class FilmService:
         else:
             order = sel[np.lexsort((movie_ids[sel], -notes[sel]))]
         page = order[offset : offset + limit]
-        ml_map = self.repo.movielens_film_map()
         page_films = [ml_map.get(int(movie_ids[i])) for i in page]
         films = self.repo.get_films(f for f in page_films if f is not None)
         items = []

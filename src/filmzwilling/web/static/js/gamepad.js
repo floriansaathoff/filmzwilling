@@ -2,15 +2,46 @@
 // stick, A to activate, B to go back, shoulder buttons to switch pages, right stick to scroll.
 // Pages can take over buttons by listening for the cancelable "fz:pad" event on document.
 import { el, toast } from "./api.js";
-import { PadReader, pickNeighbor, scrollVector } from "./pad.js";
+import { newlyPressed, PadReader, pickNeighbor, scrollVector } from "./pad.js";
 import { handlePad as playerPad, isPlayerOpen } from "./player.js";
+import { play } from "./sfx.js";
 import { icon } from "./ui.js";
 
-const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), summary, [tabindex="0"]';
-const reader = new PadReader();
+const FOCUSABLE = ['a[href]', "button:not([disabled])", 'input:not([disabled]):not([type="hidden"])', "select:not([disabled])", "summary", '[tabindex="0"]']
+  .map((s) => `${s}:not([tabindex="-1"])`).join(", ");
+const REMAP_KEY = "fz-pad-remap";
+let reader = new PadReader();
+let readerFor = null;
 let running = false;
 let helpLayer = null;
 let announced = false;
+let learner = null;
+let lastRect = null;
+let lastRepeat = false;
+
+function loadRemap(id) {
+  try {
+    return JSON.parse(localStorage.getItem(REMAP_KEY) || "{}")[id] || null;
+  } catch {
+    return null;
+  }
+}
+
+function saveRemap(id, remap) {
+  let all = {};
+  try { all = JSON.parse(localStorage.getItem(REMAP_KEY) || "{}"); } catch { all = {}; }
+  if (remap) all[id] = remap;
+  else delete all[id];
+  localStorage.setItem(REMAP_KEY, JSON.stringify(all));
+}
+
+function readerForPad(pad) {
+  if (readerFor !== pad.id) {
+    readerFor = pad.id;
+    reader = new PadReader({ remap: loadRemap(pad.id) });
+  }
+  return reader;
+}
 
 function visible(node) {
   if (node.closest("[inert], [hidden]")) return false;
@@ -40,8 +71,10 @@ function focusNode(node) {
   const r = node.getBoundingClientRect();
   const margin = 90;
   if (r.top < margin || r.bottom > innerHeight - margin || r.left < 0 || r.right > innerWidth) {
-    node.scrollIntoView({ block: "center", inline: "nearest", behavior: "smooth" });
+    // While a direction is held, smooth scrolling lags behind and the next pick uses stale rects.
+    node.scrollIntoView({ block: "center", inline: "nearest", behavior: lastRepeat ? "auto" : "smooth" });
   }
+  lastRect = rectOf(node);
 }
 
 function defaultTarget(root) {
@@ -56,17 +89,40 @@ function move(dir) {
   const items = focusables(root);
   const current = document.activeElement;
   if (!current || current === document.body || !items.includes(current)) {
-    const start = defaultTarget(root);
-    if (start) focusNode(start);
+    // Focus got lost (list reloaded, element removed): continue next to where it was.
+    const nearest = lastRect && root === document ? nearestTo(lastRect, items) : null;
+    const start = nearest || defaultTarget(root);
+    if (start) {
+      focusNode(start);
+      play("move");
+    }
     return;
   }
   const others = items.filter((n) => n !== current);
   const index = pickNeighbor(rectOf(current), others.map(rectOf), dir);
-  if (index >= 0) focusNode(others[index]);
-  else if (dir === "up" || dir === "down") {
+  if (index >= 0) {
+    focusNode(others[index]);
+    play("move");
+  } else if (dir === "up" || dir === "down") {
     const scroller = root === document ? window : root.querySelector(".sheet") || window;
     scroller.scrollBy({ top: (dir === "down" ? 1 : -1) * innerHeight * 0.4, behavior: "smooth" });
   }
+}
+
+function nearestTo(rect, items) {
+  const cx = rect.x + rect.w / 2;
+  const cy = rect.y + rect.h / 2;
+  let best = null;
+  let bestDist = Infinity;
+  for (const node of items) {
+    const r = rectOf(node);
+    const d = Math.hypot(r.x + r.w / 2 - cx, r.y + r.h / 2 - cy);
+    if (d < bestDist) {
+      best = node;
+      bestDist = d;
+    }
+  }
+  return bestDist < innerHeight ? best : null;
 }
 
 function activate() {
@@ -79,6 +135,7 @@ function activate() {
     node.select && node.select();
     return;
   }
+  play("select");
   node.click();
 }
 
@@ -87,6 +144,7 @@ function switchPage(step) {
   if (!tabs.length) return;
   const current = tabs.findIndex((t) => t.classList.contains("active"));
   const next = tabs[(current + step + tabs.length) % tabs.length];
+  play("page");
   location.href = next.href;
 }
 
@@ -99,10 +157,14 @@ function back() {
   const filters = document.getElementById("toggle-filters");
   if (filters && filters.getAttribute("aria-expanded") === "true") {
     filters.click();
-    filters.focus();
+    focusNode(filters);
     return;
   }
-  if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur();
+  if (document.activeElement && document.activeElement !== document.body) {
+    play("back");
+    document.activeElement.blur();
+    document.querySelectorAll(".pad-focus").forEach((n) => n.classList.remove("pad-focus"));
+  }
 }
 
 const HELP = [
@@ -113,7 +175,7 @@ const HELP = [
   ["Y", "Trailer abspielen"],
   ["RT", "Später (Bewerten)"],
   ["LB / RB", "Vorherige / nächste Seite"],
-  ["Start", "Filter öffnen/schließen (Empfehlungen); X setzt sie zurück"],
+  ["Start", "Filter öffnen/schließen; X setzt sie zurück"],
   ["Rechter Stick", "Scrollen"],
   ["Im Trailer", "A Pause · ←/→ 10 s · LT/RT 30 s · ↑/↓ Lautstärke · X Ton · Y Vollbild · LB/RB Trailer wechseln · B schließen"],
   ["Select / View", "Diese Hilfe"],
@@ -123,16 +185,82 @@ function toggleHelp() {
   if (helpLayer) {
     helpLayer.remove();
     helpLayer = null;
+    learner = null;
+    play("close");
     return;
   }
+  play("open");
   const close = el("button", { type: "button", class: "secondary", text: "Schließen", onclick: () => toggleHelp() });
+  const pad = firstPad();
+  const learn = el("button", { type: "button", class: "secondary", onclick: () => startLearning() }, icon("tune"), "Tasten anlernen");
+  const reset = el("button", { type: "button", class: "secondary", hidden: !(pad && loadRemap(pad.id)), onclick: () => {
+    if (!pad) return;
+    saveRemap(pad.id, null);
+    readerFor = null;
+    reset.hidden = true;
+    toast("Standardbelegung wiederhergestellt");
+  } }, icon("refresh"), "Standardbelegung");
   helpLayer = el("div", { class: "pad-help", role: "dialog", "aria-modal": "true", "aria-label": "Controller-Hilfe", onclick: (e) => { if (e.target === helpLayer) toggleHelp(); } },
     el("div", { class: "glass-panel" },
       el("h2", {}, icon("gamepad"), "Controller"),
       el("dl", {}, HELP.flatMap(([keys, text]) => [el("dt", {}, ...keys.split(" / ").flatMap((k, i) => [i ? " / " : null, k.length <= 7 ? el("kbd", { text: k }) : k])), el("dd", { text })])),
-      close));
+      el("p", { class: "pad-learn", id: "pad-learn", hidden: true }),
+      el("div", { class: "pad-help-actions" }, close, learn, reset)));
   document.body.append(helpLayer);
   focusNode(close);
+}
+
+// Pads without the standard mapping ("HID-konformer Gamecontroller") number their buttons
+// differently. The wizard asks for each button once and stores {name: index} per pad id.
+const LEARN = [
+  ["a", "A (Auswählen)"], ["b", "B (Zurück)"], ["x", "X"], ["y", "Y"],
+  ["lb", "LB (linke Schultertaste)"], ["rb", "RB (rechte Schultertaste)"],
+  ["lt", "LT (linker Trigger)"], ["rt", "RT (rechter Trigger)"],
+  ["select", "Select / View"], ["start", "Start / Menu"],
+];
+
+// Some browsers (Firefox) update Gamepad objects in place, so keep a copy of the last state.
+const snapshot = (pad) => ({ buttons: [...pad.buttons].map((b) => ({ pressed: b.pressed, value: b.value })) });
+
+function startLearning() {
+  const pad = firstPad();
+  if (!pad) return;
+  learner = { step: 0, map: {}, before: snapshot(pad), id: pad.id, started: performance.now() };
+  showLearnStep();
+}
+
+function showLearnStep() {
+  const box = document.getElementById("pad-learn");
+  if (!box || !learner) return;
+  box.hidden = false;
+  box.replaceChildren(el("strong", { text: `Drück jetzt: ${LEARN[learner.step][1]}` }),
+    el("span", { text: ` (${learner.step + 1}/${LEARN.length}, Steuerkreuz wird automatisch erkannt)` }));
+}
+
+function learnFrame(pad) {
+  // Ignore what is still held from pressing "Tasten anlernen".
+  const fresh = performance.now() - learner.started > 300 ? newlyPressed(learner.before, pad) : [];
+  learner.before = snapshot(pad);
+  const index = fresh.find((i) => !Object.values(learner.map).includes(i));
+  if (index === undefined) return;
+  learner.map[LEARN[learner.step][0]] = index;
+  play("toggle");
+  learner.step += 1;
+  if (learner.step < LEARN.length) {
+    showLearnStep();
+    return;
+  }
+  // Standard D-pad buttons only if the pad actually has them and they were not reused.
+  const used = Object.values(learner.map);
+  if (pad.mapping === "standard" || pad.buttons.length > 15) {
+    ["up", "down", "left", "right"].forEach((name, i) => { if (!used.includes(12 + i) && pad.buttons.length > 12 + i) learner.map[name] = 12 + i; });
+  }
+  saveRemap(learner.id, learner.map);
+  readerFor = null;
+  learner = null;
+  const box = document.getElementById("pad-learn");
+  if (box) box.replaceChildren(el("strong", { text: "Gespeichert. Die neue Belegung gilt ab sofort." }));
+  play("connect");
 }
 
 function route(button) {
@@ -143,7 +271,10 @@ function route(button) {
     else if (["up", "down", "left", "right"].includes(button)) move(button);
     return;
   }
-  if (isPlayerOpen() && playerPad(button)) return;
+  if (isPlayerOpen()) {
+    if (playerPad(button)) return;
+    if (button === "b") return;
+  }
   if (button === "select") {
     toggleHelp();
     return;
@@ -168,7 +299,14 @@ function loop(now) {
     running = false;
     return;
   }
-  for (const { button } of reader.read(pad, now)) route(button);
+  if (learner) {
+    learnFrame(pad);
+  } else {
+    for (const { button, repeat } of readerForPad(pad).read(pad, now)) {
+      lastRepeat = repeat;
+      route(button);
+    }
+  }
   const [dx, dy] = scrollVector(pad);
   if ((dx || dy) && !isPlayerOpen()) {
     const sheet = document.querySelector(".sheet-layer .sheet");
@@ -180,10 +318,16 @@ function loop(now) {
 function start() {
   const indicator = document.getElementById("pad-indicator");
   if (indicator) indicator.hidden = false;
-  if (!announced) {
+  if (!announced && sessionStorage.getItem("fz-pad") !== "1") {
     announced = true;
+    sessionStorage.setItem("fz-pad", "1");
     const pad = firstPad();
-    toast(`Controller verbunden${pad && pad.id ? ` (${pad.id.replace(/\s*\(.*$/, "")})` : ""}. Select/View zeigt die Belegung.`);
+    const name = pad && pad.id ? ` (${pad.id.replace(/\s*\(.*$/, "")})` : "";
+    const hint = pad && pad.mapping !== "standard" && !loadRemap(pad.id)
+      ? " Tasten vertauscht? Select/View, dann „Tasten anlernen“."
+      : " Select/View zeigt die Belegung.";
+    toast(`Controller verbunden${name}.${hint}`);
+    play("connect");
   }
   if (!running) {
     running = true;
@@ -200,11 +344,8 @@ window.addEventListener("gamepaddisconnected", () => {
   }
 });
 // Gamepads that were connected before this page loaded report themselves on the first poll.
-if (firstPad()) {
-  announced = sessionStorage.getItem("fz-pad") === "1";
-  start();
-}
-window.addEventListener("gamepadconnected", () => sessionStorage.setItem("fz-pad", "1"));
+// The toast "Controller verbunden" appears once per browser tab, not on every page.
+if (firstPad()) start();
 window.addEventListener("pointermove", (e) => {
   if (e.pointerType === "mouse" && (Math.abs(e.movementX) + Math.abs(e.movementY) > 2)) {
     document.body.classList.remove("pad-mode");

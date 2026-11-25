@@ -54,6 +54,7 @@ export function toast(message, kind = "info") {
   }
   box.textContent = message;
   box.dataset.kind = kind;
+  if (kind === "error") import("./sfx.js").then((m) => m.play("error")).catch(() => {});
   box.classList.add("visible");
   clearTimeout(box._timer);
   box._timer = setTimeout(() => box.classList.remove("visible"), 3500);

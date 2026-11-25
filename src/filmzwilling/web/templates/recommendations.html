@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_macros.html" import icon %}
+{% from "_macros.html" import icon, chip, stepper %}
 {% block title %}Empfehlungen{% endblock %}
 {% block content %}
 <section class="recs" id="recs-app"
@@ -29,17 +29,6 @@
   <p class="muted meta-line" id="recs-meta">{% if meta %}Berechnet am {{ meta.computed_at[:16].replace('T', ' ') }} aus {{ meta.rating_count }} Bewertungen, {{ meta.n_twins }} Zwillinge.{% endif %}</p>
 
   <form class="filters glass-panel" id="filters" hidden>
-    {% macro chip(name, value, label, logo=None, id=None) %}<label class="chip-toggle"><input type="checkbox" name="{{ name }}" value="{{ value }}"{% if id %} id="{{ id }}"{% endif %}><span class="chip-face">{% if logo %}<img src="{{ logo }}" alt="" loading="lazy">{% endif %}{{ label }}</span></label>{% endmacro %}
-    {% macro stepper(name, label, step, start, min, max, unit="") %}
-    <div class="stepper" data-step="{{ step }}" data-start="{{ start }}" data-min="{{ min }}" data-max="{{ max }}">
-      <span class="stepper-label">{{ label }}</span>
-      <div class="stepper-row">
-        <button type="button" class="step-btn" data-dir="-1" aria-label="{{ label }} verringern">{{ icon("remove") }}</button>
-        <input type="number" name="{{ name }}" min="{{ min }}" max="{{ max }}" step="any" inputmode="decimal" placeholder="egal" aria-label="{{ label }}">
-        <button type="button" class="step-btn" data-dir="1" aria-label="{{ label }} erhöhen">{{ icon("add") }}</button>
-      </div>
-    </div>
-    {% endmacro %}
     <section class="filter-section">
       <h3>Anbieter</h3>
       <div class="chip-row">
@@ -77,6 +66,7 @@
         {{ stepper("min_support", "Mindestens Zwillinge", 5, 10, 0, 500) }}
         {{ stepper("year_from", "Jahr von", 5, 1990, 1900, 2100) }}
         {{ stepper("year_to", "Jahr bis", 5, 2025, 1900, 2100) }}
+        {{ stepper("min_runtime", "Min. Laufzeit (Min.)", 15, 60, 0, 600) }}
         {{ stepper("max_runtime", "Max. Laufzeit (Min.)", 15, 120, 0, 600) }}
       </div>
     </section>

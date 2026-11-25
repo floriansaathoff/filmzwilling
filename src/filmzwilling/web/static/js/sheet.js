@@ -1,15 +1,17 @@
 // Film detail sheet (Abyss glass dialog): backdrop, plot, trailer, rate 0-10, not interested.
 import { el, formatNumber } from "./api.js";
 import { openTrailer } from "./player.js";
+import { play, rate as rateSound } from "./sfx.js";
 import { fadeImage, icon, loadMedia } from "./ui.js";
 
 let layer = null;
 let opener = null;
 
-export function closeSheet() {
+export function closeSheet({ silent = false } = {}) {
   if (!layer) return;
   layer.remove();
   layer = null;
+  if (!silent) play("close");
   for (const node of document.querySelectorAll("[data-sheet-inert]")) {
     node.inert = false;
     delete node.dataset.sheetInert;
@@ -23,7 +25,8 @@ export function closeSheet() {
  * @param actions {onRate(score), onHide()}
  */
 export function openSheet(item, { onRate, onHide } = {}) {
-  closeSheet();
+  closeSheet({ silent: true });
+  play("open");
   opener = document.activeElement;
   const backdrop = el("img", { alt: "" });
   const plot = el("p", { class: "spot-plot" });
@@ -54,7 +57,7 @@ export function openSheet(item, { onRate, onHide } = {}) {
       onRate
         ? [el("h3", { text: "Schon gesehen? Bewerten:" }),
           el("div", { class: "sheet-rate", role: "group", "aria-label": "Note" },
-            Array.from({ length: 11 }, (_, n) => el("button", { type: "button", text: String(n), onclick: () => { closeSheet(); onRate(n); } })))]
+            Array.from({ length: 11 }, (_, n) => el("button", { type: "button", text: String(n), onclick: () => { closeSheet({ silent: true }); rateSound(n); onRate(n); } })))]
         : null,
       el("div", { class: "sheet-actions" },
         onHide ? el("button", { type: "button", class: "secondary", onclick: () => { closeSheet(); onHide(); } }, icon("block"), "Kein Interesse") : null,

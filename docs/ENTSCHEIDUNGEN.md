@@ -230,3 +230,19 @@ oder „[4K UHD]“ werden vor der Suche entfernt. TMDB-Ergebnisse mit `media_ty
   das abbrechbare Event `fz:pad` übernehmen; der Rest ist Fokus-Navigation.
 - Der Browsertest `tests/e2e/player_pad.mjs` ersetzt die YouTube-API und `navigator.getGamepads`
   durch Attrappen, weil Tests ohne Netz und ohne echtes Gamepad laufen müssen.
+- Test geändert: Die Attrappe hält eine Taste jetzt 250 statt 100 ms. Headless-Chromium lässt in
+  der Cloud-Umgebung zeitweise 100 bis 275 ms lang keinen Frame aus, ein kürzerer Druck fiel dann
+  zwischen zwei Abfragen durch und der Test schlug zufällig fehl. 250 ms liegt unter der
+  Wiederholverzögerung (380 ms), Richtungen werden also weiterhin nur einmal ausgelöst.
+- Poster-Kacheln haben keine Play/Info-Knöpfe mehr: Klick oder A öffnet die Detailansicht, von dort
+  startet der Trailer. Das spart am Controller einen Schritt und eine Fokusebene.
+- Soundeffekte (`sfx.js`) werden mit Web Audio aus Oszillatoren erzeugt, damit es keine Audiodateien
+  und keine Lizenzfragen gibt. Der AudioContext entsteht erst nach der ersten Nutzeraktion, sonst
+  warnt der Browser. Ein/Aus steht in `localStorage` (`fz-sound`).
+- Controller ohne Standard-Belegung: Anlernen speichert `{Name: Tastenindex}` pro `pad.id` in
+  `localStorage` (`fz-pad-remap`), `PadReader` nutzt dann diese Zuordnung. Das Steuerkreuz kommt
+  bei solchen Pads oft als Hat-Achse (ein Wert für acht Richtungen), die `pad.js` auswertet.
+- Geht der Fokus verloren (Liste neu geladen, Element entfernt), setzt die Navigation beim
+  Element fort, das der letzten Fokusposition am nächsten liegt, statt oben auf der Seite.
+- Der Toast „Controller verbunden“ war im Player sichtbar, weil er dort höher sitzt und das
+  Ausblenden nur über eine Verschiebung lief. Er wird jetzt zusätzlich unsichtbar geschaltet.
