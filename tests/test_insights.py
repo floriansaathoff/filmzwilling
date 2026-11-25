@@ -137,3 +137,32 @@ def test_insights_api_and_page(service: FilmService, florian_ratings: dict[int, 
     # Only reachable through the settings, not through the tab bar.
     assert 'href="/data-science"' not in page.text.split("</header>")[0]
     assert 'href="/data-science"' in client.get("/einstellungen").text
+
+
+def test_film_universe_survives_missing_metadata(
+    synthetic_data: ProcessedData, florian_ratings: dict[int, int], config: object
+) -> None:
+    """Parquet can hand back NaN years, None genres and missing titles (real data crashed)."""
+    from dataclasses import replace
+
+    movies = synthetic_data.movies.copy()
+    movies["year"] = movies["year"].astype("float64")
+    movies.loc[movies.index[::3], "year"] = float("nan")
+    movies["genres"] = [
+        None if i % 4 == 1 else np.array(g, dtype=object) if i % 4 == 2 else g
+        for i, g in enumerate(movies["genres"])
+    ]
+    movies.loc[movies.index[::5], "title"] = None
+    means = synthetic_data.movie_means.copy()
+    means[::7] = np.nan
+    data = replace(synthetic_data, movies=movies, movie_means=means)
+    out = build_insights(data, florian_ratings, config, ml_to_film={}, titles=no_titles, recs=[])
+    films = out["films"]["films"]
+    assert any(f["year"] is None for f in films)
+    assert all(f["year"] is None or isinstance(f["year"], int) for f in films)
+    assert all(isinstance(f["genres"], list) for f in films)
+    assert all(f["title"] for f in films)
+    assert any(f["mean"] is None for f in films)
+    import json
+
+    json.dumps(out, allow_nan=False)

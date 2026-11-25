@@ -9,6 +9,7 @@ MovieLens users or films.
 
 from __future__ import annotations
 
+import math
 from collections import Counter
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
@@ -52,8 +53,28 @@ class Embedding:
     explained: list[float]
 
 
+def _year(value: Any) -> int | None:
+    """Year as int; None for missing values (None, pandas NA, float NaN, garbage)."""
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    return int(number) if math.isfinite(number) else None
+
+
+def _genre_list(value: Any) -> list[str]:
+    """Genres from a list, numpy array or None (parquet can return any of these)."""
+    if value is None or isinstance(value, (str, float)):
+        return [value] if isinstance(value, str) and value else []
+    return [str(g) for g in value if g]
+
+
+def _finite(value: float, digits: int = 1) -> float | None:
+    return round(float(value), digits) if math.isfinite(value) else None
+
+
 def _r(values: NDArray[np.float64], digits: int = 3) -> list[float]:
-    return [round(float(v), digits) for v in values]
+    return [round(float(v), digits) if math.isfinite(v) else 0.0 for v in values]
 
 
 def embed(
@@ -184,16 +205,18 @@ def film_universe(
     # One dict per displayed film (capped by display_movies, not a loop over MovieLens).
     items = []
     for i, (col, film_id) in enumerate(zip(cols.tolist(), film_ids, strict=True)):
-        year = years[i]
         title = names.get(film_id, "") if film_id is not None else ""
+        raw_title = raw_titles[i]
         items.append(
             {
                 "film_id": film_id,
-                "title": title or clean_ml_title(str(raw_titles[i])),
-                "year": None if year is None or str(year) == "<NA>" else int(year),
-                "genres": german_genres(list(genres[i]))[:3],
+                "title": title
+                or (clean_ml_title(str(raw_title)) if isinstance(raw_title, str) else "")
+                or f"MovieLens-Film {int(data.movie_ids[col])}",
+                "year": _year(years[i]),
+                "genres": german_genres(_genre_list(genres[i]))[:3],
                 "count": int(data.movie_counts[col]),
-                "mean": float(means[i]),
+                "mean": _finite(float(means[i])),
                 "your": own_cols.get(col),
                 "rec": rec_cols.get(col),
             }
@@ -220,6 +243,7 @@ def rating_histograms(
         rows = np.searchsorted(data.matrix.indptr, idx, side="right") - 1
         raw = data.matrix.data[idx].astype(np.float64) + data.user_means[rows]
         # Half stars do not hit whole notes: split each rating between its two neighbours.
+        raw = raw[np.isfinite(raw)]
         notes = np.clip(from_ml_array(raw), 0, 10)
         low = np.floor(notes).astype(np.int64)
         frac = notes - low
