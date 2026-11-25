@@ -46,7 +46,7 @@ from filmzwilling.repository import (
     StoredRecommendation,
     StoredTwin,
 )
-from filmzwilling.scale import from_ml, validate_note
+from filmzwilling.scale import FACTOR, MAX_NOTE, MIN_NOTE, OFFSET, from_ml, validate_note
 from filmzwilling.tmdb import (
     MovieDetails,
     Provider,
@@ -581,6 +581,89 @@ class FilmService:
             }
             for t in self.repo.load_twins()
         ]
+
+    def twin_detail(
+        self,
+        rank: int,
+        *,
+        sort: str = "score",
+        show: str = "all",
+        offset: int = 0,
+        limit: int = 120,
+    ) -> dict[str, Any] | None:
+        """All MovieLens ratings of one twin (paged), with your own note where you have one.
+
+        sort: "score" (best first), "low" (worst first), "title". show: "all", "common" (films
+        you rated too), "new" (films you have not rated).
+        """
+        twin = next((t for t in self.repo.load_twins() if t.rank == rank), None)
+        data = self.data()
+        if twin is None or data is None:
+            return None
+        hits = np.flatnonzero(data.user_ids == twin.ml_user_id)
+        if not hits.size:
+            return None
+        user = int(hits[0])
+        start, end = int(data.matrix.indptr[user]), int(data.matrix.indptr[user + 1])
+        cols = data.matrix.indices[start:end]
+        raw = data.matrix.data[start:end].astype(np.float64) + float(data.user_means[user])
+        notes = np.clip((raw - OFFSET) / FACTOR, MIN_NOTE, MAX_NOTE)
+        movie_ids = data.movie_ids[cols].astype(np.int64)
+        own = self.repo.ratings_for_cf()
+        own_ids = np.fromiter(own.keys(), dtype=np.int64, count=len(own))
+        common = np.isin(movie_ids, own_ids)
+        titles = data.movies["title"].to_numpy()[cols]
+        if show == "common":
+            sel = np.flatnonzero(common)
+        elif show == "new":
+            sel = np.flatnonzero(~common)
+        else:
+            sel = np.arange(len(cols))
+        if sort == "title":
+            order = sel[np.argsort(titles[sel].astype(str), kind="stable")]
+        elif sort == "low":
+            order = sel[np.lexsort((movie_ids[sel], notes[sel]))]
+        else:
+            order = sel[np.lexsort((movie_ids[sel], -notes[sel]))]
+        page = order[offset : offset + limit]
+        ml_map = self.repo.movielens_film_map()
+        page_films = [ml_map.get(int(movie_ids[i])) for i in page]
+        films = self.repo.get_films(f for f in page_films if f is not None)
+        items = []
+        for i, film_id in zip(page, page_films, strict=True):
+            film = films.get(film_id) if film_id is not None else None
+            if film is None:
+                continue
+            card = self.film_card(film)
+            card["their_score"] = round(float(notes[i]), 1)
+            card["their_score_text"] = german_number(float(notes[i]), 1)
+            card["your_score"] = own.get(int(movie_ids[i]))
+            items.append(card)
+        if self.online:
+            self._prefetch_metadata([c["film_id"] for c in items])
+        histogram = np.bincount(np.rint(notes).astype(np.int64), minlength=11)[:11]
+        their_common = notes[common]
+        yours_common = np.array([own[int(m)] for m in movie_ids[common]], dtype=np.float64)
+        diff = round(float(np.mean(their_common - yours_common)), 1) if len(yours_common) else 0.0
+        return {
+            "rank": twin.rank,
+            "label": f"Zwilling {twin.rank}",
+            "user_label": f"MovieLens-Nutzer {twin.ml_user_id}",
+            "similarity_text": german_number(twin.similarity, 2),
+            "overlap": twin.overlap,
+            "n_ratings": len(cols),
+            "n_common": int(common.sum()),
+            "n_new": int((~common).sum()),
+            "mean_text": german_number(float(notes.mean()) if len(notes) else 0.0, 1),
+            "mean_diff": diff,
+            "mean_diff_text": german_number(abs(diff), 1),
+            "histogram": [int(h) for h in histogram],
+            "sort": sort,
+            "show": show,
+            "total": len(sel),
+            "offset": offset,
+            "items": items,
+        }
 
     def evaluate(self) -> EvalResult:
         data = self.require_data()

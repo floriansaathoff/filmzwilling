@@ -135,6 +135,19 @@ try {
   if (shotDir) await page.screenshot({ path: `${shotDir}/pad-help.png` });
   await press("b");
   await page.waitForFunction(() => !document.querySelector(".pad-help"));
+  // A clicked note must not stay highlighted (white) after the film has changed.
+  await page.mouse.move(5, 5);
+  await page.mouse.move(400, 300);
+  await page.click('.score[data-score="3"]');
+  await page.mouse.move(5, 5);
+  await page.waitForTimeout(700);
+  const stuck = await page.evaluate(() => {
+    const b = document.querySelector('.score[data-score="3"]');
+    return { pressed: b.classList.contains("pressed"), bg: getComputedStyle(b).backgroundColor };
+  });
+  if (stuck.pressed || stuck.bg.startsWith("rgb(245") || stuck.bg.startsWith("rgb(255")) {
+    throw new Error("clicked note stays highlighted: " + JSON.stringify(stuck));
+  }
   // RB switches to the next page.
   await press("rb").catch(() => {}); // the page navigates away while the press is running
   await page.waitForURL(base + "/empfehlungen");

@@ -260,6 +260,12 @@ ODER oder UND, Mindest-Match, Mindestzahl Zwillinge, Jahr, Laufzeit, Leihen und 
 der URL, ein Lesezeichen behält sie. Ein Tipp: Mit „Mindestens Zwillinge“ 20 verschwinden
 Exoten, die nur wenige Leute gesehen haben.
 
+Unter „Zwillinge“ führt jede Karte zur Seite dieses Zwillings: alle seine MovieLens-Bewertungen
+als Poster-Raster (seine Note oben links, deine oben rechts, falls du den Film bewertet hast), mit
+Notenverteilung, Auswahl „Alle / Neu für dich / Gemeinsam“ und Sortierung. „Neu für dich“ mit
+„Beste zuerst“ ist eine gute Fundgrube. Ein Film öffnet die Detailansicht mit Trailer und Bewerten,
+am Controller spielt Y den Trailer und B führt zurück zur Übersicht.
+
 Der Abschnitt „Neu seit Ende 2023“ zeigt Filme, die nach dem Stand von MovieLens erschienen sind.
 Für sie gibt es keine Zwillingsdaten, sie sind nach TMDB-Note sortiert.
 

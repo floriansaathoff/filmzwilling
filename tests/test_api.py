@@ -440,3 +440,39 @@ def test_film_media_online(online_client: TestClient, online_service: FilmServic
     other = online_service.repo.upsert_tmdb_details(parse_movie(load_json("movie_238.json")))
     body = online_client.get(f"/api/films/{other}/media").json()
     assert body["trailers"] == []
+
+
+def test_twin_detail(service: FilmService, florian_ratings: dict[int, int]) -> None:
+    client = rated_client(service, florian_ratings)
+    assert client.get("/api/twins/1").status_code == 200
+    body = client.get("/api/twins/1", params={"limit": 300}).json()
+    assert body["label"] == "Zwilling 1"
+    assert body["n_ratings"] == body["n_common"] + body["n_new"] == body["total"]
+    assert sum(body["histogram"]) == body["n_ratings"]
+    assert len(body["histogram"]) == 11
+    scores = [i["their_score"] for i in body["items"]]
+    assert scores == sorted(scores, reverse=True)
+    assert all(0 <= s <= 10 for s in scores)
+    item = body["items"][0]
+    for key in ("film_id", "title", "poster_url", "their_score", "their_score_text", "your_score"):
+        assert key in item
+
+    common = client.get("/api/twins/1", params={"show": "common", "limit": 300}).json()
+    assert common["total"] == body["n_common"]
+    assert all(i["your_score"] is not None for i in common["items"])
+    new = client.get("/api/twins/1", params={"show": "new", "sort": "low"}).json()
+    assert all(i["your_score"] is None for i in new["items"])
+    low = [i["their_score"] for i in new["items"]]
+    assert low == sorted(low)
+    titled = client.get("/api/twins/1", params={"sort": "title", "limit": 5}).json()
+    assert len(titled["items"]) == 5
+    page2 = client.get("/api/twins/1", params={"offset": 5, "limit": 5}).json()
+    assert [i["film_id"] for i in page2["items"]] == [i["film_id"] for i in body["items"][5:10]]
+
+    assert client.get("/api/twins/99").status_code == 404
+    assert client.get("/api/twins/1", params={"sort": "bogus"}).status_code == 422
+    assert client.get("/api/twins/1", params={"limit": 0}).status_code == 422
+
+
+def test_twin_detail_without_twins(client: TestClient) -> None:
+    assert client.get("/api/twins/1").status_code == 404

@@ -70,3 +70,16 @@ def test_pages_with_data(service: FilmService, florian_ratings: dict[int, int]) 
 
 def test_unknown_page(client: TestClient) -> None:
     assert client.get("/gibtsnicht").status_code == 404
+
+
+def test_twin_pages(service: FilmService, florian_ratings: dict[int, int]) -> None:
+    rate_movielens(service, florian_ratings)
+    service.recompute()
+    client = TestClient(create_app(service))
+    html = client.get("/zwillinge").text
+    assert 'href="/zwillinge/1"' in html
+    page = client.get("/zwillinge/1")
+    assert page.status_code == 200
+    assert "Zwilling 1" in page.text and "/static/js/twin.js" in page.text
+    assert "Neu für dich" in page.text
+    assert client.get("/zwillinge/99").status_code == 404

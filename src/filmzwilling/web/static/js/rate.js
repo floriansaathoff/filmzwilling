@@ -143,6 +143,9 @@ function pressFeedback(score) {
   button.classList.remove("pressed");
   void button.offsetWidth;
   button.classList.add("pressed");
+  button.addEventListener("animationend", () => button.classList.remove("pressed"), { once: true });
+  // A mouse click leaves the focus on the button; drop it so the note does not stay highlighted.
+  if (!document.body.classList.contains("pad-mode")) button.blur();
 }
 
 function adjust(type, sign) {

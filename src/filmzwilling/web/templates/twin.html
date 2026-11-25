@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon %}
+{% block title %}{{ twin.label }}{% endblock %}
+{% block content %}
+<section class="twin-page" id="twin-app" data-rank="{{ twin.rank }}">
+  <div class="twin-hero glass-panel">
+    <a class="btn-round" href="/zwillinge" title="Zurück zu allen Zwillingen" aria-label="Zurück zu allen Zwillingen">{{ icon("back") }}</a>
+    <div class="twin-hero-main">
+      <h1 class="spot-title">{{ twin.label }}</h1>
+      <div class="meta-pills">
+        <span class="meta-pill">{{ icon("twins") }}{{ twin.user_label }}</span>
+        <span class="meta-pill">Ähnlichkeit {{ twin.similarity_text }}</span>
+        <span class="meta-pill">{{ icon("star") }}{{ twin.n_ratings }} Bewertungen, Schnitt {{ twin.mean_text }}</span>
+        <span class="meta-pill">{{ icon("check") }}{{ twin.n_common }} gemeinsam</span>
+        <span class="meta-pill">Bewertet im Schnitt {{ twin.mean_diff_text }} Punkte {{ "höher" if twin.mean_diff >= 0 else "niedriger" }} als du</span>
+      </div>
+    </div>
+    {% set peak = twin.histogram | max %}
+    <div class="histogram" aria-label="Notenverteilung des Zwillings">
+      {% for n in twin.histogram %}<div class="bar" title="Note {{ loop.index0 }}: {{ n }} Filme"><span style="height: {{ (100 * n / peak) | round(1) if peak else 0 }}%"></span><small>{{ loop.index0 }}</small></div>{% endfor %}
+    </div>
+  </div>
+
+  <form class="toolbar twin-toolbar" id="twin-controls">
+    <div class="segmented" role="radiogroup" aria-label="Anzeigen">
+      <label class="chip-toggle"><input type="radio" name="show" value="all" checked><span class="chip-face">Alle ({{ twin.n_ratings }})</span></label>
+      <label class="chip-toggle"><input type="radio" name="show" value="new"><span class="chip-face">Neu für dich ({{ twin.n_new }})</span></label>
+      <label class="chip-toggle"><input type="radio" name="show" value="common"><span class="chip-face">Gemeinsam ({{ twin.n_common }})</span></label>
+    </div>
+    <div class="segmented" role="radiogroup" aria-label="Sortierung">
+      <label class="chip-toggle"><input type="radio" name="sort" value="score" checked><span class="chip-face">Beste zuerst</span></label>
+      <label class="chip-toggle"><input type="radio" name="sort" value="low"><span class="chip-face">Schlechteste zuerst</span></label>
+      <label class="chip-toggle"><input type="radio" name="sort" value="title"><span class="chip-face">Titel</span></label>
+    </div>
+    <span class="muted" id="twin-count"></span>
+  </form>
+
+  <div class="grid" id="twin-grid" aria-live="polite"></div>
+  <div class="load-more"><button type="button" class="secondary" id="twin-more" hidden>Mehr laden</button></div>
+</section>
+{% endblock %}
+{% block scripts %}<script type="module" src="/static/js/twin.js?v={{ version }}"></script>{% endblock %}

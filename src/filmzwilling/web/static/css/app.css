@@ -270,17 +270,18 @@ legend { color: var(--muted); padding: 0 0.4rem; font-size: 0.9rem; }
   animation: fade-up 0.8s var(--abyss-ease) both 0.15s;
 }
 .poster { width: 100%; height: 100%; object-fit: cover; display: block; }
-.rate-dock { position: relative; z-index: 3; border-radius: 24px; padding: 14px; }
-.score-buttons { display: grid; grid-template-columns: repeat(11, 1fr); gap: 8px; }
+.rate-dock { position: relative; z-index: 3; border-radius: 24px; padding: 15px; }
+.score-buttons { display: grid; grid-template-columns: repeat(11, 1fr); gap: 9px; }
 .score {
-  min-height: 58px; min-width: 0; padding: 0; font-size: 1.4rem; font-weight: 600; border-radius: var(--abyss-radius);
+  height: 56px; min-width: 0; padding: 0; font-size: 1.4rem; font-weight: 600; border-radius: var(--abyss-radius);
   background: rgba(255, 255, 255, 0.08); color: var(--text); border-color: rgba(255, 255, 255, 0.08);
 }
-.score:hover, .score:focus-visible { background: rgb(var(--abyss-accent)); color: #121212; }
+@media (hover: hover) { .score:hover { background: rgb(var(--abyss-accent)); color: #121212; } }
+.score:focus-visible { background: rgb(var(--abyss-accent)); color: #121212; }
 .score.low { border-color: rgba(255, 159, 67, 0.75); box-shadow: inset 0 0 0 1px rgba(255, 159, 67, 0.75); }
-.score.pressed { animation: pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1); background: #fff; color: #111; }
-.action-buttons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
-.action { min-height: 50px; background: rgba(255, 255, 255, 0.05); color: var(--text); border-color: rgba(255, 255, 255, 0.06); font-weight: 500; }
+.score.pressed { animation: pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.action-buttons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; margin-top: 9px; }
+.action { height: 56px; padding-top: 0; padding-bottom: 0; background: rgba(255, 255, 255, 0.05); color: var(--text); border-color: rgba(255, 255, 255, 0.06); font-weight: 500; }
 .action:hover { background: rgba(255, 255, 255, 0.9); color: #111; }
 .action kbd { opacity: 0.65; background: rgba(0, 0, 0, 0.25); }
 .retry { color: #ffc58f; cursor: pointer; margin: 0.6rem 0 0; }
@@ -545,7 +546,7 @@ body.pad-mode .tile:focus-visible { outline: none; box-shadow: none; }
   .spot-body { padding: 1rem 0; }
   .rate-dock { padding: 10px; border-radius: 20px; }
   .score-buttons { grid-template-columns: repeat(6, 1fr); gap: 6px; }
-  .score { min-height: 50px; }
+  .score, .action { height: 50px; }
   .action { font-size: 0.85rem; padding: 0.4rem; }
   .action kbd { display: none; }
   .hero { margin: calc(-1 * var(--header-h) - 0.5rem) -0.8rem 1rem; min-height: 60vh; }
@@ -561,5 +562,44 @@ body.pad-mode .tile:focus-visible { outline: none; box-shadow: none; }
   .trailer-tabs { max-width: 60vw; }
 }
 .row-actions { white-space: nowrap; text-align: right !important; }
+.row-actions button { height: 38px; padding: 0 0.85rem; font-size: 0.85rem; vertical-align: middle; margin-left: 6px; }
+.row-actions button .i { width: 1.1em; height: 1.1em; }
 body.player-open, body:has(.sheet-layer) { overflow: hidden; }
 body.player-open .toast { bottom: 8.5rem; }
+
+/* --- twins --- */
+.twin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; margin-top: 1rem; }
+.twin-card {
+  display: flex; flex-direction: column; gap: 0.6rem; padding: 1.1rem 1.2rem; border-radius: 22px; color: var(--text); text-decoration: none;
+  background: var(--glass); -webkit-backdrop-filter: blur(var(--abyss-glass-blur)); backdrop-filter: blur(var(--abyss-glass-blur));
+  border: 1px solid var(--line); animation: fade-up 0.6s var(--abyss-ease) both;
+  transition: transform 0.37s var(--abyss-ease), border-color 0.37s var(--abyss-ease), background 0.37s var(--abyss-ease);
+}
+.twin-card:hover { border-color: var(--line-strong); background: rgba(var(--abyss-glass-tint), 0.6); }
+.twin-card:focus-visible, .twin-card.pad-focus { outline: 3px solid rgb(var(--abyss-accent)); outline-offset: 3px; transform: scale(1.02); }
+.twin-head { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 0.8rem; }
+.twin-head strong { display: block; font-size: 1.1rem; font-weight: 600; }
+.twin-head .muted { font-size: 0.85rem; }
+.twin-rank { width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; background: rgb(var(--abyss-accent)); color: #121212; }
+.twin-sim { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; }
+.twin-overlap { margin: 0; color: var(--muted); font-size: 0.9rem; }
+.twin-card .chips { margin: 0; }
+.twin-open { margin-top: auto; display: inline-flex; align-items: center; gap: 0.3rem; font-weight: 500; color: var(--muted); font-size: 0.9rem; }
+.twin-card:hover .twin-open, .twin-card:focus-visible .twin-open { color: var(--text); }
+.twin-page { max-width: 1480px; }
+.twin-hero { display: grid; grid-template-columns: auto 1fr auto; gap: 1.4rem; align-items: center; margin: 0.5rem 0 1.4rem; }
+.twin-hero .spot-title { font-size: clamp(1.8rem, 3vw, 2.6rem); margin-bottom: 12px; }
+.twin-hero .meta-pills { margin: 0; }
+.histogram { display: grid; grid-template-columns: repeat(11, 18px); gap: 5px; align-items: end; height: 110px; }
+.histogram .bar { display: flex; flex-direction: column; justify-content: flex-end; align-items: center; height: 100%; gap: 4px; }
+.histogram .bar span { display: block; width: 100%; min-height: 2px; border-radius: 5px 5px 2px 2px; background: linear-gradient(to top, rgba(var(--abyss-accent), 0.35), rgba(var(--abyss-accent), 0.95)); }
+.histogram small { font-size: 0.7rem; color: var(--muted); }
+.twin-toolbar { gap: 10px 14px; }
+.tile-yours { position: absolute; top: 8px; right: 8px; background: rgb(var(--abyss-accent)); color: #121212; border-radius: 8px; padding: 2px 8px; font-weight: 700; font-size: 0.85rem; }
+.load-more { display: flex; justify-content: center; margin: 2rem 0 0; }
+.load-more button { min-height: 52px; padding: 0 2rem; }
+@media (max-width: 760px) {
+  .twin-hero { grid-template-columns: auto 1fr; }
+  .histogram { grid-column: 1 / -1; grid-template-columns: repeat(11, 1fr); }
+  .twin-grid { grid-template-columns: 1fr; }
+}
