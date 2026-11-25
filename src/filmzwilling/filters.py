@@ -32,6 +32,7 @@ class RecFilter:
     include_rent_buy: bool = False
     genres: tuple[str, ...] = ()
     genre_mode: str = "or"
+    exclude_genres: tuple[str, ...] = ()
     min_score: float | None = None
     min_support: int | None = None
     year_from: int | None = None
@@ -49,9 +50,11 @@ def _offers_match(item: RecItem, flt: RecFilter) -> bool:
 
 
 def _genres_match(item: RecItem, flt: RecFilter) -> bool:
+    have = {g.lower() for g in item.genres}
+    if any(g.lower() in have for g in flt.exclude_genres):
+        return False
     if not flt.genres:
         return True
-    have = {g.lower() for g in item.genres}
     wanted = [g.lower() for g in flt.genres]
     if flt.genre_mode == "and":
         return all(g in have for g in wanted)
@@ -133,8 +136,13 @@ def _float(params: Mapping[str, Any], name: str) -> float | None:
         return None
 
 
-def parse_filter(params: Mapping[str, Any], default_providers: Iterable[int]) -> RecFilter:
-    """Build a filter from URL query params; missing `providers` means the defaults."""
+def parse_filter(
+    params: Mapping[str, Any],
+    default_providers: Iterable[int],
+    default_exclude_genres: Iterable[str] = (),
+) -> RecFilter:
+    """Build a filter from URL query params; missing `providers` or `exclude_genres` means
+    the saved defaults, an empty value means none."""
     provider_values = _values(params, "providers")
     providers: frozenset[int] | None
     if provider_values is None:
@@ -143,12 +151,15 @@ def parse_filter(params: Mapping[str, Any], default_providers: Iterable[int]) ->
         providers = None
     else:
         providers = frozenset(int(v) for v in provider_values if v.lstrip("-").isdigit())
+    exclude_values = _values(params, "exclude_genres")
+    exclude_genres = tuple(default_exclude_genres if exclude_values is None else exclude_values)
     sort = _first(params, "sort")
     return RecFilter(
         providers=providers,
         include_rent_buy=_first(params, "rent_buy").lower() in TRUE_VALUES,
         genres=tuple(_values(params, "genres") or ()),
         genre_mode="and" if _first(params, "genre_mode").lower() == "and" else "or",
+        exclude_genres=exclude_genres,
         min_score=_float(params, "min_score"),
         min_support=_int(params, "min_support"),
         year_from=_int(params, "year_from"),
@@ -171,6 +182,8 @@ def filter_to_params(flt: RecFilter) -> dict[str, str]:
         params["genres"] = ",".join(flt.genres)
     if flt.genre_mode == "and":
         params["genre_mode"] = "and"
+    # Always written, so an empty exclusion is not replaced by the saved defaults.
+    params["exclude_genres"] = ",".join(flt.exclude_genres)
     if flt.min_score is not None:
         params["min_score"] = f"{flt.min_score:g}"
     for name in ("min_support", "year_from", "year_to", "min_runtime", "max_runtime"):

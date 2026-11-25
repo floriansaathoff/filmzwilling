@@ -128,6 +128,20 @@ def test_recommendations_with_filters(
     ).json()["items"]
     assert drama and all("Drama" in i["genres"] for i in drama)
 
+    no_drama = client.get(
+        "/api/recommendations", params={"providers": "any", "exclude_genres": "Drama"}
+    ).json()
+    assert no_drama["items"] and all("Drama" not in i["genres"] for i in no_drama["items"])
+    assert no_drama["filter"]["exclude_genres"] == "Drama"
+    service.repo.update_user_settings(excluded_genres=["Drama"])
+    saved = client.get("/api/recommendations", params={"providers": "any"}).json()["items"]
+    assert [i["film_id"] for i in saved] == [i["film_id"] for i in no_drama["items"]]
+    override = client.get(
+        "/api/recommendations", params={"providers": "any", "exclude_genres": ""}
+    ).json()["items"]
+    assert any("Drama" in i["genres"] for i in override)
+    service.repo.update_user_settings(excluded_genres=[])
+
     high = client.get("/api/recommendations", params={"providers": "any", "min_score": "8"}).json()[
         "items"
     ]
@@ -312,6 +326,10 @@ def test_settings(client: TestClient, service: FilmService) -> None:
     assert client.put("/api/settings", json={"queue_size": -5}).status_code == 422
     assert client.put("/api/settings", json={"queue_size": 10**7}).status_code == 422
     assert client.put("/api/settings", json={"my_profiles": ["Gibtsnicht"]}).status_code == 422
+    assert body["excluded_genres"] == []
+    assert "Drama" in body["all_genres"]
+    r = client.put("/api/settings", json={"excluded_genres": ["Drama"]})
+    assert r.json()["excluded_genres"] == ["Drama"]
 
 
 def test_evaluate_endpoint(

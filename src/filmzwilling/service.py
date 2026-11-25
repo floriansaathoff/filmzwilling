@@ -492,7 +492,8 @@ class FilmService:
         defaults = self.default_provider_ids()
         if "providers" not in params and not defaults:
             params = {**params, "providers": "any"}
-        return parse_filter(params, defaults)
+        excluded = self.repo.get_user_settings().excluded_genres
+        return parse_filter(params, defaults, excluded)
 
     def _excluded_film_ids(self) -> set[int]:
         statuses = self.repo.statuses()

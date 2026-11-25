@@ -100,6 +100,7 @@ class UserSettings:
     my_profiles: list[str]
     my_providers: list[int] | None
     queue_size: int = DEFAULT_QUEUE_SIZE
+    excluded_genres: list[str] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -243,6 +244,7 @@ class Repository:
             my_profiles=list(self.get_setting("my_profiles", [])),
             my_providers=self.get_setting("my_providers", None),
             queue_size=int(self.get_setting("queue_size", DEFAULT_QUEUE_SIZE)),
+            excluded_genres=[str(g) for g in self.get_setting("excluded_genres", [])],
         )
 
     def update_user_settings(
@@ -251,6 +253,7 @@ class Repository:
         my_profiles: list[str] | None = None,
         my_providers: list[int] | None = None,
         queue_size: int | None = None,
+        excluded_genres: list[str] | None = None,
     ) -> UserSettings:
         if queue_size is not None and not 0 <= int(queue_size) <= MAX_QUEUE_SIZE:
             raise ValueError(f"Größe der Warteschlange muss zwischen 0 und {MAX_QUEUE_SIZE} liegen")
@@ -260,6 +263,9 @@ class Repository:
             self.set_setting("my_providers", [int(p) for p in my_providers])
         if queue_size is not None:
             self.set_setting("queue_size", int(queue_size))
+        if excluded_genres is not None:
+            names = dict.fromkeys(g.strip() for g in excluded_genres)
+            self.set_setting("excluded_genres", [g for g in names if g])
         return self.get_user_settings()
 
     # --- films ----------------------------------------------------------------------------

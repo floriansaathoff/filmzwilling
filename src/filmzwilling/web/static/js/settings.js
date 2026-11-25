@@ -1,4 +1,4 @@
-// Settings: own profiles, own providers, queue size, self-test and recomputation.
+// Settings: own profiles, own providers, excluded genres, queue size, self-test and recomputation.
 import { el, formatNumber, getJSON, postJSON, putJSON, toast } from "./api.js";
 
 const form = document.getElementById("settings-form");
@@ -26,6 +26,13 @@ async function load() {
       ? data.providers.map((p) => checkbox("providers", p.id, p.name, mine.has(p.id), p.logo_url))
       : [el("p", { class: "muted", text: "Noch keine Anbieterliste (mit 'filmzwilling tmdb-sync' laden)." })]),
   );
+  const excluded = new Set(data.excluded_genres);
+  const genres = document.getElementById("excluded-genres");
+  genres.replaceChildren(
+    ...(data.all_genres.length
+      ? data.all_genres.map((g) => checkbox("excluded_genres", g, g, excluded.has(g)))
+      : [el("p", { class: "muted", text: "Noch keine Filme mit Genres (zuerst 'filmzwilling setup')." })]),
+  );
   document.getElementById("queue-size").value = data.queue_size;
 }
 
@@ -36,6 +43,8 @@ form.addEventListener("submit", async (event) => {
     queue_size: Number(document.getElementById("queue-size").value || 0),
   };
   const providerBoxes = [...form.querySelectorAll('input[name="providers"]')];
+  const genreBoxes = [...form.querySelectorAll('input[name="excluded_genres"]')];
+  if (genreBoxes.length) body.excluded_genres = genreBoxes.filter((b) => b.checked).map((b) => b.value);
   if (providerBoxes.length) body.my_providers = providerBoxes.filter((b) => b.checked).map((b) => Number(b.value));
   try {
     await putJSON("/api/settings", body);

@@ -76,6 +76,7 @@ class SettingsIn(BaseModel):
     my_profiles: list[str] | None = None
     my_providers: list[int] | None = None
     queue_size: Annotated[int, Field(ge=0, le=100_000)] | None = None
+    excluded_genres: list[str] | None = None
 
 
 def _query_dict(request: Request) -> dict[str, Any]:
@@ -139,6 +140,7 @@ def create_app(service: FilmService) -> FastAPI:
             other_providers=[p for p in providers if p["id"] not in defaults],
             default_providers=sorted(defaults),
             genres=repo.genres(),
+            excluded_genres=repo.get_user_settings().excluded_genres,
             meta=repo.get_setting("recs_meta"),
         )
 
@@ -456,6 +458,8 @@ def create_app(service: FilmService) -> FastAPI:
                 for p in repo.list_providers()
             ],
             "queue_size": settings.queue_size,
+            "excluded_genres": settings.excluded_genres,
+            "all_genres": repo.genres(),
             "evaluation": repo.get_setting("evaluation"),
             "recs": repo.get_setting("recs_meta"),
             "online": service.online,
@@ -470,7 +474,10 @@ def create_app(service: FilmService) -> FastAPI:
                     status_code=422, detail=f"Unbekannte Profile: {', '.join(sorted(unknown))}"
                 )
         repo.update_user_settings(
-            my_profiles=body.my_profiles, my_providers=body.my_providers, queue_size=body.queue_size
+            my_profiles=body.my_profiles,
+            my_providers=body.my_providers,
+            queue_size=body.queue_size,
+            excluded_genres=body.excluded_genres,
         )
         return get_settings()
 

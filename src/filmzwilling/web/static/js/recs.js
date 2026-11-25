@@ -12,6 +12,7 @@ const grid = document.getElementById("recs-grid");
 const newGrid = document.getElementById("new-grid");
 const countBox = document.getElementById("recs-count");
 const defaults = (app.dataset.defaultProviders || "").split(",").filter(Boolean);
+const defaultExcluded = app.dataset.defaultExcludeGenres || "";
 
 function readUrl() {
   const params = new URLSearchParams(location.search);
@@ -22,6 +23,9 @@ function readUrl() {
   form.querySelectorAll('input[name="providers"]').forEach((box) => { box.checked = chosen.has(box.value); });
   const genres = new Set((params.get("genres") || "").split(",").filter(Boolean));
   form.querySelectorAll('input[name="genres"]').forEach((box) => { box.checked = genres.has(box.value); });
+  const excludedRaw = params.has("exclude_genres") ? params.get("exclude_genres") : defaultExcluded;
+  const excluded = new Set(excludedRaw.split(",").filter(Boolean));
+  form.querySelectorAll('input[name="exclude_genres"]').forEach((box) => { box.checked = excluded.has(box.value); });
   form.elements.rent_buy.checked = params.get("rent_buy") === "1";
   form.elements.genre_mode.checked = params.get("genre_mode") === "and";
   for (const name of ["min_score", "min_support", "year_from", "year_to", "min_runtime", "max_runtime"]) {
@@ -41,6 +45,8 @@ function currentParams() {
   const genres = [...form.querySelectorAll('input[name="genres"]:checked')].map((b) => b.value);
   if (genres.length) params.set("genres", genres.join(","));
   if (form.elements.genre_mode.checked) params.set("genre_mode", "and");
+  const excluded = [...form.querySelectorAll('input[name="exclude_genres"]:checked')].map((b) => b.value);
+  params.set("exclude_genres", excluded.join(","));
   if (form.elements.rent_buy.checked) params.set("rent_buy", "1");
   for (const name of ["min_score", "min_support", "year_from", "year_to", "min_runtime", "max_runtime"]) {
     const value = form.elements[name].value.trim();
