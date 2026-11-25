@@ -60,3 +60,16 @@ test("pickNeighbor prefers overlapping targets over closer diagonal ones", () =>
   const trailer = { x: 40, y: 100, w: 140, h: 48 };
   assert.equal(pickNeighbor(from, [trailer], "up"), 0);
 });
+
+test("stepNumber: empty jumps to start, below min clears, max caps", async () => {
+  const { stepNumber } = await import("../../src/filmzwilling/web/static/js/pad.js");
+  const opts = { step: 0.5, start: 6, min: 0, max: 10 };
+  assert.equal(stepNumber("", 1, opts), "6");
+  assert.equal(stepNumber("", -1, opts), "6");
+  assert.equal(stepNumber("6", 1, opts), "6.5");
+  assert.equal(stepNumber("6,5", -1, opts), "6");
+  assert.equal(stepNumber("9.8", 1, opts), "10");
+  assert.equal(stepNumber("0.2", -1, opts), "");
+  assert.equal(stepNumber("abc", 1, opts), "6");
+  assert.equal(stepNumber("1990", 1, { step: 5, start: 1990, min: 1900, max: 2100 }), "1995");
+});

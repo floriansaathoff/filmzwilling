@@ -1,6 +1,7 @@
 // Recommendations page: spotlight carousel of the top films, Abyss poster grid, film sheet,
 // filters stored in the URL and the new-releases section.
 import { el, formatNumber, getJSON, postJSON, toast } from "./api.js";
+import { stepNumber } from "./pad.js";
 import { openTrailer } from "./player.js";
 import { openSheet } from "./sheet.js";
 import { fadeImage, icon, loadMedia, setAmbient } from "./ui.js";
@@ -276,13 +277,47 @@ button("refresh-availability", "/api/availability/refresh", "Verfügbarkeit aktu
 button("refresh-new", "/api/new-releases/refresh", "Neuerscheinungen geladen");
 
 const toggle = document.getElementById("toggle-filters");
-function showFilters(open) {
+function showFilters(open, { focus = false } = {}) {
   form.hidden = !open;
   toggle.setAttribute("aria-expanded", String(open));
   sessionStorage.setItem("fz-filters-open", open ? "1" : "0");
+  if (open && focus) form.querySelector("input, summary, button")?.focus({ focusVisible: true });
+  if (!open && focus) toggle.focus({ focusVisible: true });
 }
-toggle.addEventListener("click", () => showFilters(form.hidden));
+toggle.addEventListener("click", () => showFilters(form.hidden, { focus: document.body.classList.contains("pad-mode") }));
 showFilters(sessionStorage.getItem("fz-filters-open") === "1");
+document.getElementById("close-filters").addEventListener("click", () => showFilters(false, { focus: true }));
+
+function resetFilters() {
+  history.replaceState(null, "", location.pathname);
+  readUrl();
+  load();
+  toast("Filter zurückgesetzt");
+}
+document.getElementById("reset-filters").addEventListener("click", resetFilters);
+
+// Steppers: big -/+ buttons for the number filters (controller friendly; typing still works).
+form.querySelectorAll(".stepper").forEach((box) => {
+  const input = box.querySelector("input");
+  const opts = { step: Number(box.dataset.step), start: Number(box.dataset.start), min: Number(box.dataset.min), max: Number(box.dataset.max) };
+  box.querySelectorAll(".step-btn").forEach((button) =>
+    button.addEventListener("click", () => {
+      input.value = stepNumber(input.value, Number(button.dataset.dir), opts);
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    }));
+});
+
+// Controller: Start opens/closes the filters, X inside the filters resets them.
+document.addEventListener("fz:pad", (event) => {
+  const { button } = event.detail;
+  if (button === "start") {
+    event.preventDefault();
+    showFilters(form.hidden, { focus: true });
+  } else if (button === "x" && !form.hidden && form.contains(document.activeElement)) {
+    event.preventDefault();
+    resetFilters();
+  }
+});
 
 readUrl();
 load();
