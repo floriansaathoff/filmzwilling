@@ -43,6 +43,17 @@ function readerForPad(pad) {
   return reader;
 }
 
+let analog = null;
+
+/**
+ * Let a page use the sticks as analog input (e.g. to rotate a 3D view). The handler gets the
+ * pad and the frame time in ms and returns true while it uses the sticks; the left stick then
+ * no longer moves the focus and the right stick no longer scrolls. Pass null to stop.
+ */
+export function setAnalogHandler(handler) {
+  analog = handler;
+}
+
 function visible(node) {
   if (node.closest("[inert], [hidden]")) return false;
   const rects = node.getClientRects();
@@ -177,6 +188,7 @@ const HELP = [
   ["LB / RB", "Vorherige / nächste Seite"],
   ["Start", "Filter öffnen/schließen; X setzt sie zurück"],
   ["Rechter Stick", "Scrollen"],
+  ["Data Science", "Linker Stick drehen · rechter Stick zoomen · ←/→ nächster Punkt · ↑/↓ Gruppe · A Details · LT/RT Genre · Y Autodrehung · X Ansicht zurücksetzen · LB/RB Ansicht · Start Vollbild"],
   ["Im Trailer", "A Pause · ←/→ 10 s · LT/RT 30 s · ↑/↓ Lautstärke · X Ton · Y Vollbild · LB/RB Trailer wechseln · B schließen"],
   ["Select / View", "Diese Hilfe"],
 ];
@@ -299,15 +311,18 @@ function loop(now) {
     running = false;
     return;
   }
+  const dt = Math.min(64, now - (loop.last || now));
+  loop.last = now;
+  const sticks = Boolean(analog && !learner && !helpLayer && !isPlayerOpen() && !document.querySelector(".sheet-layer") && analog(pad, dt));
   if (learner) {
     learnFrame(pad);
   } else {
-    for (const { button, repeat } of readerForPad(pad).read(pad, now)) {
+    for (const { button, repeat } of readerForPad(pad).read(sticks ? { buttons: pad.buttons, axes: [] } : pad, now)) {
       lastRepeat = repeat;
       route(button);
     }
   }
-  const [dx, dy] = scrollVector(pad);
+  const [dx, dy] = sticks ? [0, 0] : scrollVector(pad);
   if ((dx || dy) && !isPlayerOpen()) {
     const sheet = document.querySelector(".sheet-layer .sheet");
     (sheet || window).scrollBy(dx, dy);

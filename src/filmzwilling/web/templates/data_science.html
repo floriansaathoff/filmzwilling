@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon %}
+{% block title %}Data Science{% endblock %}
+{% block content %}
+<section class="ds" id="ds-app" data-has-data="{{ 1 if has_data else 0 }}" data-rating-count="{{ rating_count }}">
+  <canvas class="ds-canvas" id="ds-canvas" aria-label="3D-Punktwolke" role="img"></canvas>
+  <canvas class="ds-overlay" id="ds-overlay" aria-hidden="true"></canvas>
+
+  <header class="ds-bar">
+    <a class="button secondary ds-back" href="/einstellungen" id="ds-back">{{ icon("back") }}<span>Einstellungen</span> <kbd class="pad">B</kbd></a>
+    <nav class="ds-views" role="tablist" aria-label="Ansichten">
+      <kbd class="pad">LB</kbd>
+      <button type="button" role="tab" class="ds-view" data-view="taste" aria-selected="true">Geschmacksraum</button>
+      <button type="button" role="tab" class="ds-view" data-view="films" aria-selected="false">Filmuniversum</button>
+      <button type="button" role="tab" class="ds-view" data-view="stats" aria-selected="false">Statistik</button>
+      <kbd class="pad">RB</kbd>
+    </nav>
+    <div class="ds-bar-right">
+      <button type="button" class="icon-btn" id="ds-spin" aria-pressed="true" title="Automatisch drehen (Y)">{{ icon("refresh") }}<span>Drehen</span> <kbd class="pad">Y</kbd></button>
+      <button type="button" class="icon-btn" id="ds-fullscreen" title="Vollbild (Start)">{{ icon("fullscreen") }}<span>Vollbild</span> <kbd class="pad">Start</kbd></button>
+    </div>
+  </header>
+
+  <aside class="ds-info glass-panel" id="ds-info" aria-live="polite">
+    <p class="ds-kicker" id="ds-kicker"></p>
+    <h1 class="ds-title" id="ds-title">Data Science</h1>
+    <p class="ds-text muted" id="ds-text">Lade Daten …</p>
+    <div class="ds-detail" id="ds-detail"></div>
+  </aside>
+
+  <div class="ds-side" id="ds-side">
+    <div class="ds-groups glass-pill" id="ds-groups" role="radiogroup" aria-label="Punkte durchgehen"></div>
+    <div class="ds-genres glass-pill" id="ds-genres" hidden>
+      <kbd class="pad">LT</kbd>
+      <button type="button" class="ds-genre-step" data-dir="-1" aria-label="Vorheriges Genre">{{ icon("remove") }}</button>
+      <span id="ds-genre">Alle Genres</span>
+      <button type="button" class="ds-genre-step" data-dir="1" aria-label="Nächstes Genre">{{ icon("add") }}</button>
+      <kbd class="pad">RT</kbd>
+    </div>
+  </div>
+
+  <div class="ds-legend glass-panel" id="ds-legend"></div>
+
+  <p class="ds-hint" id="ds-hint">
+    <span class="mouse-only">Ziehen dreht · Mausrad zoomt · Klick wählt einen Punkt · ←/→ nächster Punkt</span>
+    <span class="pad-only"><kbd>L</kbd> drehen · <kbd>R</kbd> zoomen · <kbd>←</kbd><kbd>→</kbd> nächster Punkt · <kbd>↑</kbd><kbd>↓</kbd> Gruppe · <kbd>A</kbd> Details · <kbd>X</kbd> zurücksetzen</span>
+  </p>
+
+  <div class="ds-stats" id="ds-stats" hidden></div>
+  <div class="ds-tooltip" id="ds-tooltip" hidden></div>
+</section>
+{% endblock %}
+{% block scripts %}<script type="module" src="/static/js/datascience.js?v={{ version }}"></script>{% endblock %}

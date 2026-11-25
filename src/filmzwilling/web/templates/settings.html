@@ -1,50 +1,74 @@
 {% extends "base.html" %}
+{% from "_macros.html" import icon %}
 {% block title %}Einstellungen{% endblock %}
 {% block content %}
 <section class="settings" id="settings-app">
-  <h1>Einstellungen</h1>
-  <form id="settings-form" class="settings-form">
-    <fieldset>
-      <legend>Meine Profile</legend>
+  <div class="toolbar">
+    <h1 class="toolbar-title">Einstellungen</h1>
+    <span class="save-state" id="settings-status" aria-live="polite">Änderungen werden sofort gespeichert</span>
+  </div>
+
+  <a class="ds-entry glass-panel" href="/data-science" id="open-data-science" data-pad-default>
+    <svg class="ds-entry-art" id="ds-entry-art" viewBox="0 0 320 160" aria-hidden="true"></svg>
+    <div class="ds-entry-text">
+      <span class="ds-entry-kicker">Data Science</span>
+      <strong>Dein Geschmack in 3D</strong>
+      <span class="muted">Punktwolken deiner Zwillinge und aller Filme, Verteilungen, Genre-Profil und Selbsttest. Im Vollbild, mit dem Controller dreh- und zoombar.</span>
+    </div>
+    <span class="btn-round ds-entry-go">{{ icon("open") }}</span>
+  </a>
+
+  <form id="settings-form" class="settings-form" onsubmit="return false">
+    <section class="settings-card glass-panel">
+      <h2>Meine Profile</h2>
       <p class="muted">Welche importierten Profile bist du? Ohne Auswahl zählen alle Profile als deine.</p>
-      <div id="profiles" class="check-list"></div>
-    </fieldset>
-    <fieldset>
-      <legend>Meine Anbieter</legend>
+      <div id="profiles" class="chip-row"></div>
+    </section>
+    <section class="settings-card glass-panel">
+      <h2>Meine Anbieter</h2>
       <p class="muted">Standard für den Anbieterfilter der Empfehlungen (Abo, gratis und mit Werbung).</p>
-      <div id="providers" class="check-list providers"></div>
-    </fieldset>
-    <fieldset>
-      <legend>Ausgeschlossene Genres</legend>
+      <div id="providers" class="chip-row"></div>
+    </section>
+    <section class="settings-card glass-panel">
+      <h2>Ausgeschlossene Genres</h2>
       <p class="muted">Filme mit einem dieser Genres erscheinen standardmäßig nicht in den Empfehlungen. Auf der Empfehlungsseite lässt sich das im Filter jederzeit ändern.</p>
-      <div id="excluded-genres" class="check-list"></div>
-    </fieldset>
-    <fieldset>
-      <legend>Warteschlange</legend>
-      <label>Beliebte MovieLens-Filme in der Warteschlange <input type="number" name="queue_size" id="queue-size" min="0" max="100000" step="50"></label>
-    </fieldset>
-    <button type="submit">Speichern</button> <span id="settings-status" class="muted" aria-live="polite"></span>
+      <div id="excluded-genres" class="chip-row chips-exclude"></div>
+    </section>
+    <section class="settings-card glass-panel">
+      <h2>Warteschlange</h2>
+      <p class="muted">Wie viele beliebte MovieLens-Filme zum Bewerten vorgeschlagen werden.</p>
+      <div class="stepper queue-stepper" data-step="50" data-start="1000" data-min="0" data-max="100000">
+        <span class="stepper-label">Beliebte Filme in der Warteschlange</span>
+        <div class="stepper-row">
+          <button type="button" class="step-btn" data-dir="-1" aria-label="50 weniger">{{ icon("remove") }}</button>
+          <input type="number" name="queue_size" id="queue-size" min="0" max="100000" step="50" inputmode="numeric" aria-label="Beliebte Filme in der Warteschlange">
+          <button type="button" class="step-btn" data-dir="1" aria-label="50 mehr">{{ icon("add") }}</button>
+        </div>
+      </div>
+    </section>
   </form>
 
-  <section class="evaluation">
-    <h2>So gut kennt dich die App</h2>
-    <div id="evaluation">
-      {% if evaluation %}
-      <p>5-fache Kreuzvalidierung über {{ evaluation.n_ratings }} eigene Bewertungen:
-        RMSE {{ '%.2f' | format(evaluation.rmse) | replace('.', ',') }} (Filmdurchschnitt: {{ '%.2f' | format(evaluation.baseline_rmse) | replace('.', ',') }}),
-        Spearman {{ '%.2f' | format(evaluation.spearman) | replace('.', ',') }} (Filmdurchschnitt: {{ '%.2f' | format(evaluation.baseline_spearman) | replace('.', ',') }}).</p>
-      {% else %}
-      <p class="muted">Noch nicht ausgewertet.</p>
-      {% endif %}
-    </div>
-    <button type="button" id="run-evaluate" class="secondary">Selbsttest starten</button>
-  </section>
+  <div class="settings-split">
+    <section class="settings-card glass-panel evaluation">
+      <h2>So gut kennt dich die App</h2>
+      <div id="evaluation" class="eval-tiles">
+        {% if evaluation %}
+        <div class="eval-tile"><span class="muted">RMSE</span><strong>{{ '%.2f' | format(evaluation.rmse) | replace('.', ',') }}</strong><span class="muted">Filmdurchschnitt {{ '%.2f' | format(evaluation.baseline_rmse) | replace('.', ',') }}</span></div>
+        <div class="eval-tile"><span class="muted">Spearman</span><strong>{{ '%.2f' | format(evaluation.spearman) | replace('.', ',') }}</strong><span class="muted">Filmdurchschnitt {{ '%.2f' | format(evaluation.baseline_spearman) | replace('.', ',') }}</span></div>
+        <p class="muted eval-note">5-fache Kreuzvalidierung über {{ evaluation.n_ratings }} eigene Bewertungen.</p>
+        {% else %}
+        <p class="muted">Noch nicht ausgewertet.</p>
+        {% endif %}
+      </div>
+      <button type="button" id="run-evaluate" class="big-action secondary">{{ icon("check") }}<span>Selbsttest starten</span></button>
+    </section>
 
-  <section>
-    <h2>Empfehlungen</h2>
-    <p class="muted" id="recs-info">{% if meta %}Zuletzt berechnet am {{ meta.computed_at[:16].replace('T', ' ') }} ({{ meta.rating_count }} Bewertungen, {{ meta.duration_seconds }} s).{% else %}Noch nicht berechnet.{% endif %}</p>
-    <button type="button" id="recompute">Empfehlungen neu berechnen</button>
-  </section>
+    <section class="settings-card glass-panel">
+      <h2>Empfehlungen</h2>
+      <p class="muted" id="recs-info">{% if meta %}Zuletzt berechnet am {{ meta.computed_at[:16].replace('T', ' ') }} ({{ meta.rating_count }} Bewertungen, {{ meta.duration_seconds }} s).{% else %}Noch nicht berechnet.{% endif %}</p>
+      <button type="button" id="recompute" class="big-action">{{ icon("refresh") }}<span>Empfehlungen neu berechnen</span></button>
+    </section>
+  </div>
 </section>
 {% endblock %}
 {% block scripts %}<script type="module" src="/static/js/settings.js?v={{ version }}"></script>{% endblock %}

@@ -246,3 +246,32 @@ oder „[4K UHD]“ werden vor der Suche entfernt. TMDB-Ergebnisse mit `media_ty
   Element fort, das der letzten Fokusposition am nächsten liegt, statt oben auf der Seite.
 - Der Toast „Controller verbunden“ war im Player sichtbar, weil er dort höher sitzt und das
   Ausblenden nur über eine Verschiebung lief. Er wird jetzt zusätzlich unsichtbar geschaltet.
+
+
+## Einstellungen und Data-Science-Seite
+
+- Die Einstellungen nutzen dieselben Bausteine wie die Filter: Chips statt Checkboxen, ein
+  −/+-Stepper für die Warteschlange (50er-Schritte), keine Dropdowns. Änderungen werden sofort
+  gespeichert (kurz verzögert, beim Verlassen der Seite nachgeholt), damit kein „Speichern“-Knopf
+  am Controller gesucht werden muss.
+- Die Data-Science-Seite (`/data-science`) ist absichtlich nicht in der Tab-Leiste, sondern nur
+  über die große Karte in den Einstellungen erreichbar. Sie läuft im Vollbild ohne Kopfzeile.
+- Punktwolken: eine abgeschnittene SVD (k = 3, `scipy.sparse.linalg.svds`) der mittelwert-
+  zentrierten Bewertungsmatrix, beschränkt auf eine Stichprobe (alle Top-400-Zwillinge plus
+  6000 zufällige Nutzer, Startwert fest) und die 3000 meistbewerteten Filme plus alle eigenen und
+  empfohlenen. Nutzer liegen bei U·S, Filme bei V·S; Florian wird wie eine neue Zeile projiziert
+  (x·V). Die volle Matrix mit 32 Mio. Bewertungen zu zerlegen wäre langsam und brächte für die
+  Ansicht nichts. Ausgeliefert werden höchstens 2200 Nutzer und 1800 Filme, das bleibt im Browser
+  flüssig. Ergebnis im Speicher, bis sich Bewertungen oder Empfehlungen ändern.
+- Darstellung mit eigenem kleinen WebGL-Renderer (Punkte mit additivem Glühen) statt three.js,
+  weil das Projekt keine Abhängigkeiten und keinen Build-Schritt hat. Kamera- und Projektionsmathe
+  ohne DOM in `orbit.js`, mit `node --test` getestet.
+- Farben aus einer CVD-geprüften Palette (Blau, Orange, Türkis für dunklen Hintergrund). Eigene
+  Noten laufen rot über grau nach blau, Empfehlungen sind türkis, alles andere grau.
+- MovieLens-Notenverteilung: halbe Sterne treffen keine ganze Note auf der Skala 0 bis 10, deshalb
+  wird jede Bewertung anteilig auf die beiden Nachbarnoten verteilt (sonst bliebe Note 5 leer).
+- Controller: `gamepad.js` bekommt `setAnalogHandler`, damit eine Seite die Sticks analog nutzen
+  kann (linker Stick dreht, rechter zoomt), ohne dass der linke Stick gleichzeitig den Fokus
+  bewegt. Steuerkreuz ←/→ springt zum nächsten Punkt der Gruppe, ↑/↓ wechselt die Gruppe, A öffnet
+  den Film (bewertbar), LT/RT wählt ein Genre, LB/RB die Ansicht. In der Statistik öffnet A an
+  einem Diagramm den Prüfmodus, ←/→ geht dann die Werte mit Tooltip durch.

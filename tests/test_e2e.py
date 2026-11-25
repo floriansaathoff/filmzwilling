@@ -14,6 +14,7 @@ pytestmark = pytest.mark.e2e
 
 SCRIPT = Path(__file__).parent / "e2e" / "rate_flow.mjs"
 PLAYER_SCRIPT = Path(__file__).parent / "e2e" / "player_pad.mjs"
+DATA_SCIENCE_SCRIPT = Path(__file__).parent / "e2e" / "datascience_pad.mjs"
 
 
 def playwright_available() -> bool:
@@ -78,3 +79,9 @@ def test_trailer_player_and_controller(tmp_path: Path) -> None:
     if not playwright_available():
         pytest.skip("Playwright für Node ist nicht installiert")
     run_against_demo(tmp_path, PLAYER_SCRIPT)
+
+
+def test_settings_and_data_science_with_controller(tmp_path: Path) -> None:
+    if not playwright_available():
+        pytest.skip("Playwright für Node ist nicht installiert")
+    run_against_demo(tmp_path, DATA_SCIENCE_SCRIPT)
