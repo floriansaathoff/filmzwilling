@@ -162,6 +162,13 @@ def create_app(service: FilmService) -> FastAPI:
             meta=repo.get_setting("recs_meta"),
         )
 
+    @app.get("/zwillinge/{rank}", response_class=HTMLResponse)
+    def twin_page(request: Request, rank: int) -> HTMLResponse:
+        detail = service.twin_detail(rank, limit=0)
+        if detail is None:
+            raise not_found("Zwilling nicht gefunden")
+        return page(request, "twin.html", "twins", twin=detail)
+
     @app.get("/einstellungen", response_class=HTMLResponse)
     def settings_page(request: Request) -> HTMLResponse:
         return page(
@@ -314,6 +321,19 @@ def create_app(service: FilmService) -> FastAPI:
         if media is None:
             raise not_found()
         return media
+
+    @app.get("/api/twins/{rank}")
+    def twin_detail(
+        rank: int,
+        sort: Literal["score", "low", "title"] = "score",
+        show: Literal["all", "common", "new"] = "all",
+        offset: Annotated[int, Query(ge=0)] = 0,
+        limit: Annotated[int, Query(ge=1, le=300)] = 120,
+    ) -> dict[str, Any]:
+        detail = service.twin_detail(rank, sort=sort, show=show, offset=offset, limit=limit)
+        if detail is None:
+            raise not_found("Zwilling nicht gefunden")
+        return detail
 
     @app.get("/api/twins")
     def twins() -> dict[str, Any]:
