@@ -162,7 +162,8 @@ def tmdb_fixture_handler(extra: dict[str, Any] | None = None) -> TMDBHandler:
             tmdb_id = parts[2]
             name = f"movie_{tmdb_id}.json"
             if len(parts) > 3:
-                name = f"providers_{tmdb_id}.json"
+                kind = "videos" if parts[3] == "videos" else "providers"
+                name = f"{kind}_{tmdb_id}.json"
             file = FIXTURES / "tmdb" / name
             if file.exists():
                 return httpx.Response(200, json=load_json(name))
