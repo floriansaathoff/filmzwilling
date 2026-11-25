@@ -182,6 +182,16 @@ def create_app(service: FilmService) -> FastAPI:
             online=service.online,
         )
 
+    @app.get("/data-science", response_class=HTMLResponse)
+    def data_science_page(request: Request) -> HTMLResponse:
+        return page(
+            request,
+            "data_science.html",
+            "datascience",
+            has_data=service.data() is not None,
+            rating_count=repo.count_ratings(),
+        )
+
     @app.get("/poster/{film_id}.svg")
     def poster(film_id: int) -> Response:
         film = repo.get_film(film_id)
@@ -358,6 +368,10 @@ def create_app(service: FilmService) -> FastAPI:
     @app.get("/api/twins")
     def twins() -> dict[str, Any]:
         return {"items": service.twins()}
+
+    @app.get("/api/insights")
+    def insights() -> dict[str, Any]:
+        return service.insights()
 
     @app.get("/api/genres")
     def genres() -> dict[str, Any]:

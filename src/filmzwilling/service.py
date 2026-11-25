@@ -28,6 +28,13 @@ from filmzwilling.importers.common import ImportReport, ParseResult, store_event
 from filmzwilling.importers.generic_csv import parse_generic_csv
 from filmzwilling.importers.netflix import parse_netflix
 from filmzwilling.importers.prime import detect_mapping, load_mapping, parse_prime, read_records
+from filmzwilling.insights import (
+    InsightConfig,
+    build_insights,
+    genre_profile,
+    rating_histograms,
+    timeline,
+)
 from filmzwilling.movielens import (
     ProcessedData,
     clean_ml_title,
@@ -144,6 +151,7 @@ class FilmService:
         self._compute_lock = threading.Lock()
         self._items_cache: list[RecItem] | None = None
         self._title_index: tuple[list[str], list[int]] | None = None
+        self._insights_cache: tuple[Any, dict[str, Any]] | None = None
         self.last_error: str | None = None
         self._action_lock = threading.RLock()
         self._done_client_ids: OrderedDict[str, None] = OrderedDict()
@@ -698,6 +706,60 @@ class FilmService:
             "offset": offset,
             "items": items,
         }
+
+    def insights(self) -> dict[str, Any]:
+        """Data for the data-science page (cached until ratings or recommendations change)."""
+        data = self.require_data()
+        rated = self.repo.list_ratings()
+        meta = self.repo.get_setting("recs_meta")
+        key = (
+            len(rated),
+            sum(r["score"] for r in rated),
+            rated[0]["rated_at"] if rated else None,
+            (meta or {}).get("computed_at"),
+        )
+        cached = self._insights_cache
+        if cached is not None and cached[0] == key:
+            return cached[1]
+        films = self.repo.get_films(r["film_id"] for r in rated)
+        recs = [(r.movielens_id, r.score, r.support) for r in self.repo.load_recommendations()]
+
+        def titles(film_ids: Any) -> dict[int, str]:
+            return {f.id: f.display_title for f in self.repo.get_films(film_ids).values()}
+
+        result = build_insights(
+            data,
+            self.repo.ratings_for_cf(),
+            self.config,
+            ml_to_film=self.repo.movielens_film_map(),
+            titles=titles,
+            recs=recs,
+        )
+        own = [r["score"] for r in rated]
+        result.update(
+            {
+                "histogram": rating_histograms(data, own, InsightConfig()),
+                "genres": genre_profile(
+                    [
+                        (r["score"], films[r["film_id"]].display_genres)
+                        for r in rated
+                        if r["film_id"] in films
+                    ]
+                ),
+                "timeline": timeline(r["rated_at"] for r in rated),
+                "summary": {
+                    "ratings": len(rated),
+                    "mean": round(float(np.mean(own)), 2) if own else None,
+                    "recs": len(recs),
+                },
+                "evaluation": self.repo.get_setting("evaluation"),
+                "meta": meta,
+                # MovieLens user id -> rank of the stored twin page (/zwillinge/{rank}).
+                "twin_pages": {str(t.ml_user_id): t.rank for t in self.repo.load_twins()},
+            }
+        )
+        self._insights_cache = (key, result)
+        return result
 
     def evaluate(self) -> EvalResult:
         data = self.require_data()

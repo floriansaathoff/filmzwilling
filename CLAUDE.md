@@ -25,6 +25,7 @@ src/filmzwilling/
   rating_queue.py   Warteschlange (Quellen 1 bis 4, Später, Fortschritt)
   filters.py        Filter und Sortierung der Empfehlungen, URL-Parameter
   service.py        FilmService: verbindet alles, Hintergrund-Neuberechnung, Dedup per client_id
+  insights.py       Data-Science-Seite: SVD-Punktwolken, Notenverteilung, Genre-Profil
   synthetic.py      synthetische Cluster-Daten (Tests und demo), demo.py baut den Demo-Ordner
   web/app.py        FastAPI-Seiten und JSON-API; templates/, static/js/, static/css/
   cli.py            typer-CLI "filmzwilling"
@@ -64,7 +65,8 @@ filmzwilling demo                               # App mit synthetischen Daten, o
 - `FILMZWILLING_OFFLINE=1` schaltet TMDB ab; Demo-Ordner sind immer offline.
 - Frontend-Logik ohne DOM in `web/static/js/keys.js`, `queue.js`, `media.js` und `pad.js`, mit
   `node --test` getestet. Design: Abyss (MIT), siehe `docs/ENTSCHEIDUNGEN.md`; Trailer-Player in
-  `player.js`, Controller in `gamepad.js`.
+  `player.js`, Controller in `gamepad.js`, 3D-Kamera in `orbit.js` (WebGL in
+  `datascience.js`).
   Keine npm-Abhängigkeiten, kein Build-Schritt.
 - ruff (Zeilenlänge 100) und mypy müssen sauber bleiben, Coverage mindestens 90 %.
 
