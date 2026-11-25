@@ -66,6 +66,8 @@ def test_genres_or_and() -> None:
 def test_year_runtime_score_support() -> None:
     assert ids(apply_filters(ITEMS, RecFilter(year_from=2000, year_to=2015))) == [2, 3, 6]
     assert ids(apply_filters(ITEMS, RecFilter(max_runtime=120))) == [4, 1, 2]
+    long_ones = apply_filters(ITEMS, RecFilter(min_runtime=120))
+    assert long_ones and all(i.runtime is not None and i.runtime >= 120 for i in long_ones)
     assert ids(apply_filters(ITEMS, RecFilter(min_score=8.0))) == [4, 1, 2]
     assert ids(apply_filters(ITEMS, RecFilter(min_support=20))) == [4, 1, 5]
 

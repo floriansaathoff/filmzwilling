@@ -167,7 +167,7 @@ def create_app(service: FilmService) -> FastAPI:
         detail = service.twin_detail(rank, limit=0)
         if detail is None:
             raise not_found("Zwilling nicht gefunden")
-        return page(request, "twin.html", "twins", twin=detail)
+        return page(request, "twin.html", "twins", twin=detail, genres=repo.genres())
 
     @app.get("/einstellungen", response_class=HTMLResponse)
     def settings_page(request: Request) -> HTMLResponse:
@@ -329,8 +329,26 @@ def create_app(service: FilmService) -> FastAPI:
         show: Literal["all", "common", "new"] = "all",
         offset: Annotated[int, Query(ge=0)] = 0,
         limit: Annotated[int, Query(ge=1, le=300)] = 120,
+        genres: str | None = None,
+        year_from: Annotated[int | None, Query(ge=1800, le=2200)] = None,
+        year_to: Annotated[int | None, Query(ge=1800, le=2200)] = None,
+        min_score: Annotated[float | None, Query(ge=0, le=10)] = None,
+        min_runtime: Annotated[int | None, Query(ge=0, le=1000)] = None,
+        max_runtime: Annotated[int | None, Query(ge=0, le=1000)] = None,
     ) -> dict[str, Any]:
-        detail = service.twin_detail(rank, sort=sort, show=show, offset=offset, limit=limit)
+        detail = service.twin_detail(
+            rank,
+            sort=sort,
+            show=show,
+            offset=offset,
+            limit=limit,
+            genres=[g for g in (genres or "").split(",") if g],
+            year_from=year_from,
+            year_to=year_to,
+            min_score=min_score,
+            min_runtime=min_runtime,
+            max_runtime=max_runtime,
+        )
         if detail is None:
             raise not_found("Zwilling nicht gefunden")
         return detail

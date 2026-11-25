@@ -237,12 +237,26 @@ Controller-Symbol.
 | Y (Dreieck) | Trailer |
 | RT | später |
 | LB / RB | vorherige / nächste Seite |
-| Start | Filter öffnen/schließen (Empfehlungen), X setzt sie zurück |
+| Start | Filter öffnen/schließen (Empfehlungen, Zwilling), X setzt sie zurück |
 | rechter Stick | scrollen |
 | Select / View | Hilfe mit der Belegung |
 
 Im Trailer: A oder Start Pause, links/rechts 10 Sekunden, LT/RT 30 Sekunden, hoch/runter
 Lautstärke, X Ton, Y Vollbild, LB/RB Trailer wechseln, B schließen.
+
+Controller ohne Standard-Belegung (unter Windows oft „HID-konformer Gamecontroller“) melden ihre
+Tasten in anderer Reihenfolge. Dann hilft „Tasten anlernen“ in der Hilfe (Select/View oder Klick
+auf das Controller-Symbol): Die App fragt jede Taste einmal ab und merkt sich die Belegung pro
+Controller im Browser. „Standardbelegung“ setzt sie zurück. Das Steuerkreuz wird auch als
+Hat-Achse erkannt, die solche Controller statt Tasten melden.
+
+## Sounds
+
+Navigation, Öffnen und Schließen, Bewerten (höhere Note, hellerer Ton), „Nicht gesehen“,
+„Später“, Rückgängig und Fehler haben kurze Soundeffekte. Sie werden im Browser synthetisiert
+(Web Audio, keine Audiodateien). Der Lautsprecher oben rechts schaltet sie ab und an. Browser
+erlauben Ton erst nach einem Klick oder Tastendruck auf der Seite; Controller-Tasten zählen
+dafür nicht.
 
 ## Empfehlungen
 
@@ -252,17 +266,20 @@ Berechnung dauert mit dem vollen Datensatz etwa 2 Sekunden.
 
 Oben laufen die fünf besten Empfehlungen als großes Banner durch. Jede Kachel zeigt das Poster
 mit der vorhergesagten Note (zum Beispiel „8,7“) und den Anbietern, darunter Titel, Jahr,
-Laufzeit und wie viele Zwillinge den Film bewertet haben. Ein Klick öffnet die Detailansicht mit
-Handlung, Trailer, Bewerten und „Kein Interesse“. Die Filter öffnest du mit „Filter“ (am Controller mit Start). Anbieter, Genres und Sortierung sind
+Laufzeit und wie viele Zwillinge den Film bewertet haben. Ein Klick (am Controller A) öffnet direkt die
+Detailansicht mit Handlung, Trailer, Bewerten und „Kein Interesse“; Y auf einer Kachel spielt den
+Trailer sofort. Die Filter öffnest du mit „Filter“ (am Controller mit Start). Anbieter, Genres und Sortierung sind
 große Schaltflächen zum Antippen, die Zahlenfilter haben −/+ Knöpfe (leer heißt „egal“, der erste
 Druck springt auf einen sinnvollen Startwert, unter dem Minimum wird das Feld wieder leer). Filter (Anbieter, Genres mit
-ODER oder UND, Mindest-Match, Mindestzahl Zwillinge, Jahr, Laufzeit, Leihen und Kaufen) stehen in
+ODER oder UND, Mindest-Match, Mindestzahl Zwillinge, Jahr, Mindest- und Höchstlaufzeit, Leihen und Kaufen) stehen in
 der URL, ein Lesezeichen behält sie. Ein Tipp: Mit „Mindestens Zwillinge“ 20 verschwinden
 Exoten, die nur wenige Leute gesehen haben.
 
 Unter „Zwillinge“ führt jede Karte zur Seite dieses Zwillings: alle seine MovieLens-Bewertungen
 als Poster-Raster (seine Note oben links, deine oben rechts, falls du den Film bewertet hast), mit
-Notenverteilung, Auswahl „Alle / Neu für dich / Gemeinsam“ und Sortierung. „Neu für dich“ mit
+Notenverteilung, Auswahl „Alle / Neu für dich / Gemeinsam“ und Sortierung. Über „Filter“ (am
+Controller Start) lässt sich die Liste nach Genres, Jahr, Laufzeit und Mindestnote des Zwillings
+eingrenzen; Profil und Notenverteilung beziehen sich immer auf alle seine Bewertungen. „Neu für dich“ mit
 „Beste zuerst“ ist eine gute Fundgrube. Ein Film öffnet die Detailansicht mit Trailer und Bewerten,
 am Controller spielt Y den Trailer und B führt zurück zur Übersicht.
 

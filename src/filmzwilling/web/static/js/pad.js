@@ -17,11 +17,32 @@ export function stickDirection(x, y, deadzone = 0.5) {
 }
 
 /**
+ * D-pad reported as a single "hat switch" axis (generic HID controllers without the standard
+ * mapping): -1 = up, then clockwise in steps of 2/7; values above 1 mean "not pressed".
+ * Diagonals count as their vertical part.
+ */
+export function hatDirection(value) {
+  if (typeof value !== "number" || Number.isNaN(value) || value > 1.05 || value < -1.05) return null;
+  const step = Math.round((value + 1) / (2 / 7));
+  return ["up", "up", "right", "down", "down", "down", "left", "up"][step] || null;
+}
+
+/** Index of the hat-switch axis of a non-standard pad, or -1 (axis 9 is the usual one). */
+export function hatAxis(pad) {
+  const axes = (pad && pad.axes) || [];
+  if (!pad || pad.mapping === "standard" || axes.length < 5) return -1;
+  if (axes.length > 9) return 9;
+  return axes.findIndex((v, i) => i >= 4 && Math.abs(v) > 1.1);
+}
+
+/**
  * Turns successive gamepad snapshots into events. Buttons fire once per press; directions
  * (D-pad or left stick) fire on press and then repeat while held, like a keyboard.
  */
 export class PadReader {
-  constructor({ deadzone = 0.5, delay = 380, repeat = 110 } = {}) {
+  /** @param remap optional {name: buttonIndex} for pads without the standard mapping */
+  constructor({ deadzone = 0.5, delay = 380, repeat = 110, remap = null } = {}) {
+    this.remap = remap;
     this.deadzone = deadzone;
     this.delay = delay;
     this.repeat = repeat;
@@ -36,13 +57,20 @@ export class PadReader {
     const buttons = (pad && pad.buttons) || [];
     const axes = (pad && pad.axes) || [];
     const current = new Set();
-    buttons.forEach((b, i) => { if (i < BUTTONS.length && pressed(b)) current.add(BUTTONS[i]); });
+    if (this.remap) {
+      for (const [name, index] of Object.entries(this.remap)) if (pressed(buttons[index])) current.add(name);
+    } else {
+      buttons.forEach((b, i) => { if (i < BUTTONS.length && pressed(b)) current.add(BUTTONS[i]); });
+    }
     for (const name of current) {
       if (!DIRECTIONS.includes(name) && !this.down.has(name)) events.push({ button: name, repeat: false });
     }
     this.down = current;
 
-    const dir = DIRECTIONS.find((d) => current.has(d)) || stickDirection(axes[0], axes[1], this.deadzone);
+    const hat = hatAxis(pad);
+    const dir = DIRECTIONS.find((d) => current.has(d))
+      || (hat >= 0 ? hatDirection(axes[hat]) : null)
+      || stickDirection(axes[0], axes[1], this.deadzone);
     if (dir !== this.dir) {
       this.dir = dir;
       if (dir) {
@@ -112,4 +140,10 @@ export function stepNumber(value, dir, { step, start, min, max }) {
   const next = Number((Number(text) + dir * step).toFixed(decimals));
   if (next < min) return "";
   return String(Math.min(max, next));
+}
+
+/** Indices of buttons pressed in `pad` that were not pressed in `before` (for "learn buttons"). */
+export function newlyPressed(before, pad) {
+  const prev = (before && before.buttons) || [];
+  return ((pad && pad.buttons) || []).flatMap((b, i) => (pressed(b) && !pressed(prev[i]) ? [i] : []));
 }

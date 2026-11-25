@@ -73,3 +73,30 @@ test("stepNumber: empty jumps to start, below min clears, max caps", async () =>
   assert.equal(stepNumber("abc", 1, opts), "6");
   assert.equal(stepNumber("1990", 1, { step: 5, start: 1990, min: 1900, max: 2100 }), "1995");
 });
+
+test("hat switch D-pad of generic HID pads", async () => {
+  const { hatDirection, hatAxis, PadReader } = await import("../../src/filmzwilling/web/static/js/pad.js");
+  assert.equal(hatDirection(-1), "up");
+  assert.equal(hatDirection(-3 / 7), "right");
+  assert.equal(hatDirection(1 / 7), "down");
+  assert.equal(hatDirection(5 / 7), "left");
+  assert.equal(hatDirection(9 / 7), null);
+  const axes = [0, 0, 0, 0, 0, 0, 0, 0, 0, 9 / 7];
+  const pad = { mapping: "", axes, buttons: [] };
+  assert.equal(hatAxis(pad), 9);
+  assert.equal(hatAxis({ ...pad, mapping: "standard" }), -1);
+  const r = new PadReader();
+  assert.deepEqual(r.read(pad, 0), []);
+  assert.deepEqual(r.read({ ...pad, axes: [...axes.slice(0, 9), -3 / 7] }, 10), [{ button: "right", repeat: false }]);
+});
+
+test("remapped buttons and newlyPressed", async () => {
+  const { PadReader, newlyPressed } = await import("../../src/filmzwilling/web/static/js/pad.js");
+  const b = (...on) => ({ buttons: Array.from({ length: 12 }, (_, i) => ({ pressed: on.includes(i), value: on.includes(i) ? 1 : 0 })), axes: [0, 0] });
+  const r = new PadReader({ remap: { a: 2, b: 1, start: 9 } });
+  assert.deepEqual(r.read(b(2), 0), [{ button: "a", repeat: false }]);
+  assert.deepEqual(r.read(b(2, 0), 10), []);
+  assert.deepEqual(r.read(b(9), 20), [{ button: "start", repeat: false }]);
+  assert.deepEqual(newlyPressed(b(1), b(1, 4)), [4]);
+  assert.deepEqual(newlyPressed(null, b(3)), [3]);
+});

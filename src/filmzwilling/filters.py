@@ -36,6 +36,7 @@ class RecFilter:
     min_support: int | None = None
     year_from: int | None = None
     year_to: int | None = None
+    min_runtime: int | None = None
     max_runtime: int | None = None
     sort: str = "match"
 
@@ -63,6 +64,8 @@ def item_matches(item: RecItem, flt: RecFilter, *, personalized: bool = True) ->
     if flt.year_from is not None and (item.year is None or item.year < flt.year_from):
         return False
     if flt.year_to is not None and (item.year is None or item.year > flt.year_to):
+        return False
+    if flt.min_runtime is not None and (item.runtime is None or item.runtime < flt.min_runtime):
         return False
     if flt.max_runtime is not None and (item.runtime is None or item.runtime > flt.max_runtime):
         return False
@@ -150,6 +153,7 @@ def parse_filter(params: Mapping[str, Any], default_providers: Iterable[int]) ->
         min_support=_int(params, "min_support"),
         year_from=_int(params, "year_from"),
         year_to=_int(params, "year_to"),
+        min_runtime=_int(params, "min_runtime"),
         max_runtime=_int(params, "max_runtime"),
         sort=sort if sort in SORT_OPTIONS else "match",
     )
@@ -169,7 +173,7 @@ def filter_to_params(flt: RecFilter) -> dict[str, str]:
         params["genre_mode"] = "and"
     if flt.min_score is not None:
         params["min_score"] = f"{flt.min_score:g}"
-    for name in ("min_support", "year_from", "year_to", "max_runtime"):
+    for name in ("min_support", "year_from", "year_to", "min_runtime", "max_runtime"):
         value = getattr(flt, name)
         if value is not None:
             params[name] = str(value)

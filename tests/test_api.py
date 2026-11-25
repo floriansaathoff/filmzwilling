@@ -474,5 +474,34 @@ def test_twin_detail(service: FilmService, florian_ratings: dict[int, int]) -> N
     assert client.get("/api/twins/1", params={"limit": 0}).status_code == 422
 
 
+def test_twin_detail_filters(service: FilmService, florian_ratings: dict[int, int]) -> None:
+    client = rated_client(service, florian_ratings)
+    everything = client.get("/api/twins/1", params={"limit": 300}).json()
+    high = client.get("/api/twins/1", params={"min_score": 7, "limit": 300}).json()
+    assert all(i["their_score"] >= 7 for i in high["items"])
+    assert high["total"] == sum(1 for i in everything["items"] if i["their_score"] >= 7)
+
+    genre = everything["items"][0]["genres"][0]
+    by_genre = client.get("/api/twins/1", params={"genres": genre, "limit": 300}).json()
+    assert 0 < by_genre["total"] <= everything["total"]
+    assert all(genre in i["genres"] for i in by_genre["items"])
+
+    years = sorted(i["year"] for i in everything["items"] if i["year"])
+    mid = years[len(years) // 2]
+    recent = client.get("/api/twins/1", params={"year_from": mid, "limit": 300}).json()
+    assert recent["items"] and all(i["year"] >= mid for i in recent["items"])
+    old = client.get("/api/twins/1", params={"year_to": mid - 1, "limit": 300}).json()
+    assert recent["total"] + old["total"] <= everything["total"]
+    assert all(i["year"] < mid for i in old["items"])
+    # The profile (histogram, counts) always describes the whole twin, not the filtered list.
+    assert high["n_ratings"] == everything["n_ratings"]
+    longer = client.get("/api/twins/1", params={"min_runtime": 100, "limit": 300}).json()
+    assert all(i["runtime"] is not None and i["runtime"] >= 100 for i in longer["items"])
+    shorter = client.get("/api/twins/1", params={"max_runtime": 99, "limit": 300}).json()
+    assert all(i["runtime"] is not None and i["runtime"] <= 99 for i in shorter["items"])
+    assert longer["total"] + shorter["total"] <= everything["total"]
+    assert client.get("/api/twins/1", params={"min_score": 11}).status_code == 422
+
+
 def test_twin_detail_without_twins(client: TestClient) -> None:
     assert client.get("/api/twins/1").status_code == 404

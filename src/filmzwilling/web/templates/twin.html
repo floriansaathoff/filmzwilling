@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_macros.html" import icon %}
+{% from "_macros.html" import icon, chip, stepper %}
 {% block title %}{{ twin.label }}{% endblock %}
 {% block content %}
 <section class="twin-page" id="twin-app" data-rank="{{ twin.rank }}">
@@ -33,6 +33,28 @@
       <label class="chip-toggle"><input type="radio" name="sort" value="title"><span class="chip-face">Titel</span></label>
     </div>
     <span class="muted" id="twin-count"></span>
+    <div class="head-actions"><button type="button" class="icon-btn" id="toggle-filters" aria-expanded="false" aria-controls="filters" title="Filter (Start am Controller)">{{ icon("tune") }}<span>Filter</span> <kbd class="pad">Start</kbd></button></div>
+  </form>
+
+  <form class="filters glass-panel" id="filters" hidden>
+    <section class="filter-section">
+      <h3>Genres</h3>
+      <div class="chip-row">{% for g in genres %}{{ chip("genres", g, g) }}{% endfor %}</div>
+    </section>
+    <section class="filter-section">
+      <h3>Weitere Filter</h3>
+      <div class="stepper-grid">
+        {{ stepper("min_score", "Note des Zwillings mindestens", 0.5, 7, 0, 10) }}
+        {{ stepper("year_from", "Jahr von", 5, 1990, 1900, 2100) }}
+        {{ stepper("year_to", "Jahr bis", 5, 2025, 1900, 2100) }}
+        {{ stepper("min_runtime", "Min. Laufzeit (Min.)", 15, 60, 0, 600) }}
+        {{ stepper("max_runtime", "Max. Laufzeit (Min.)", 15, 120, 0, 600) }}
+      </div>
+    </section>
+    <div class="filter-actions">
+      <button type="button" class="secondary" id="reset-filters">{{ icon("refresh") }}<span>Zurücksetzen</span> <kbd class="pad">X</kbd></button>
+      <button type="button" id="close-filters">{{ icon("check") }}<span>Fertig</span> <kbd class="pad">B</kbd></button>
+    </div>
   </form>
 
   <div class="grid" id="twin-grid" aria-live="polite"></div>

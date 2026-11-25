@@ -1,6 +1,7 @@
 // Rating page: Abyss spotlight, optimistic UI, keyboard and controller shortcuts, retry queue,
 // poster/backdrop preloading and the trailer player.
 import { el, formatNumber, getJSON, postJSON, toast } from "./api.js";
+import { play, rate as rateSound } from "./sfx.js";
 import { keyToAction } from "./keys.js";
 import { isPlayerOpen, openTrailer } from "./player.js";
 import { Preloader, RatingSession, RetryQueue } from "./queue.js";
@@ -159,6 +160,8 @@ function act(type, score) {
   if (type === "rate") pressFeedback(score);
   const record = session.act(type, type === "rate" ? { score } : {});
   if (!record) return;
+  if (type === "rate") rateSound(score);
+  else play(type === "not_seen" ? "notSeen" : "later");
   render();
   adjust(type, +1);
   const body = { film_id: record.film_id, client_id: newId() };
@@ -171,6 +174,7 @@ async function undo() {
   const lastType = session.lastAction;
   const item = session.undo();
   if (item) {
+    play("undo");
     render();
     adjust(lastType, -1);
     queue.enqueue({ type: "undo", body: { client_id: newId() } });

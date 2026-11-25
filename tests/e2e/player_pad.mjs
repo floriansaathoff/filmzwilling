@@ -64,9 +64,10 @@ await page.addInitScript(() => {
     async press(name) {
       const b = pad.buttons[names.indexOf(name)];
       b.pressed = true; b.value = 1;
-      await new Promise((r) => setTimeout(r, 100));
+      // Held for 250 ms: headless Chromium here sometimes skips frames for 100 to 275 ms.
+      await new Promise((r) => setTimeout(r, 250));
       b.pressed = false; b.value = 0;
-      await new Promise((r) => setTimeout(r, 60));
+      await new Promise((r) => setTimeout(r, 120));
     },
   };
 });

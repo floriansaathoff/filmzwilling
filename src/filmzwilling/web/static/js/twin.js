@@ -1,12 +1,15 @@
 // One twin: all of their MovieLens ratings as a poster grid (paged), sheet with trailer and rating.
 import { el, getJSON, postJSON, toast } from "./api.js";
+import { setupFilterPanel } from "./filterpanel.js";
 import { openTrailer } from "./player.js";
 import { openSheet } from "./sheet.js";
-import { icon, setAmbient } from "./ui.js";
+import { setAmbient } from "./ui.js";
 
 const app = document.getElementById("twin-app");
 const rank = app.dataset.rank;
 const controls = document.getElementById("twin-controls");
+const filters = document.getElementById("filters");
+const NUMBERS = ["min_score", "year_from", "year_to", "min_runtime", "max_runtime"];
 const grid = document.getElementById("twin-grid");
 const more = document.getElementById("twin-more");
 const count = document.getElementById("twin-count");
@@ -18,12 +21,21 @@ function readUrl() {
   const params = new URLSearchParams(location.search);
   controls.elements.sort.value = params.get("sort") || "score";
   controls.elements.show.value = params.get("show") || "all";
+  const genres = new Set((params.get("genres") || "").split(",").filter(Boolean));
+  filters.querySelectorAll('input[name="genres"]').forEach((box) => { box.checked = genres.has(box.value); });
+  for (const name of NUMBERS) filters.elements[name].value = params.get(name) || "";
 }
 
 function params() {
   const p = new URLSearchParams();
   if (controls.elements.sort.value !== "score") p.set("sort", controls.elements.sort.value);
   if (controls.elements.show.value !== "all") p.set("show", controls.elements.show.value);
+  const genres = [...filters.querySelectorAll('input[name="genres"]:checked')].map((b) => b.value);
+  if (genres.length) p.set("genres", genres.join(","));
+  for (const name of NUMBERS) {
+    const value = filters.elements[name].value.trim().replace(",", ".");
+    if (value) p.set(name, value);
+  }
   return p;
 }
 
@@ -34,10 +46,7 @@ function tile(item) {
     el("div", { class: "tile-art" },
       el("img", { class: "tile-poster", src: item.poster_url, alt: "", loading: "lazy" }),
       el("span", { class: "tile-match", title: "Note des Zwillings" }, item.their_score_text),
-      yours,
-      el("div", { class: "tile-overlay" },
-        el("button", { type: "button", class: "btn-round", tabindex: "-1", title: "Trailer abspielen", "aria-label": `Trailer: ${item.title}`, onclick: (e) => { e.stopPropagation(); openTrailer(item); } }, icon("play")),
-        el("button", { type: "button", class: "btn-round", tabindex: "-1", title: "Details", "aria-label": `Details: ${item.title}`, onclick: (e) => { e.stopPropagation(); open(item, yours); } }, icon("info")))),
+      yours),
     el("h3", { class: "tile-title", text: item.title, title: item.title }),
     el("p", { class: "tile-meta", text: [item.year, item.runtime ? `${item.runtime} Min.` : null].filter(Boolean).join(" · ") }),
   );
@@ -92,6 +101,22 @@ async function load({ append = false } = {}) {
 }
 
 controls.addEventListener("change", () => load());
+let timer = null;
+filters.addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(load, 250); });
+setupFilterPanel({
+  form: filters,
+  toggle: document.getElementById("toggle-filters"),
+  storageKey: "fz-twin-filters-open",
+  onReset: () => {
+    const show = controls.elements.show.value;
+    const sort = controls.elements.sort.value;
+    history.replaceState(null, "", location.pathname);
+    readUrl();
+    controls.elements.show.value = show;
+    controls.elements.sort.value = sort;
+    load();
+  },
+});
 more.addEventListener("click", async () => {
   const nodes = await load({ append: true });
   if (nodes[0]) nodes[0].focus({ focusVisible: true });
@@ -104,7 +129,7 @@ document.addEventListener("fz:pad", (event) => {
   if (button === "y" && node && items.has(node)) {
     event.preventDefault();
     openTrailer(items.get(node));
-  } else if (button === "b" && !document.querySelector(".sheet-layer")) {
+  } else if (button === "b" && !document.querySelector(".sheet-layer") && filters.hidden) {
     event.preventDefault();
     location.href = "/zwillinge";
   }

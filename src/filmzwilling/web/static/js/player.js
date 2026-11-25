@@ -1,6 +1,7 @@
 // Trailer player: the YouTube stream is embedded with the IFrame API (no YouTube controls,
 // youtube-nocookie host) and driven by an own Abyss-style OSD. Keyboard and gamepad work too.
 import { el, toast } from "./api.js";
+import { play } from "./sfx.js";
 import { clamp, formatTime, isUnplayableError, seekTarget, trailerLabels } from "./media.js";
 import { icon, loadMedia, setIcon } from "./ui.js";
 
@@ -115,6 +116,7 @@ function build(media, opener) {
   }
   document.body.append(root);
   document.body.classList.add("player-open");
+  play("open");
 
   ui.seek.addEventListener("input", () => {
     s.dragging = true;
@@ -310,6 +312,7 @@ export function closePlayer() {
   if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
   document.removeEventListener("fullscreenchange", onFullscreen);
   root.remove();
+  play("close");
   document.body.classList.remove("player-open");
   for (const node of document.querySelectorAll("[data-player-inert]")) {
     node.inert = false;
