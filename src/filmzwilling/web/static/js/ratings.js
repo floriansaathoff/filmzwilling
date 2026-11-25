@@ -1,5 +1,7 @@
 // "Meine Bewertungen": searchable list, editable notes, delete.
 import { deleteJSON, el, getJSON, putJSON, toast } from "./api.js";
+import { openTrailer } from "./player.js";
+import { icon, setAmbient } from "./ui.js";
 
 const body = document.querySelector("#ratings-table tbody");
 const search = document.getElementById("rating-search");
@@ -17,12 +19,13 @@ function row(item) {
     }
   });
   const remove = el("button", { type: "button", class: "secondary small", text: "Löschen" });
+  const trailer = el("button", { type: "button", class: "icon-btn small", title: "Trailer abspielen", onclick: () => openTrailer(item) }, icon("play"), el("span", { text: "Trailer" }));
   const tr = el("tr", {},
     el("td", {}, el("img", { class: "thumb", src: item.poster_url, alt: "", loading: "lazy" })),
     el("td", {}, el("strong", { text: item.title }), item.original_title && item.original_title !== item.title ? el("div", { class: "muted", text: item.original_title }) : null),
     el("td", { text: item.year || "" }),
     el("td", {}, select),
-    el("td", {}, remove));
+    el("td", { class: "row-actions" }, trailer, " ", remove));
   remove.addEventListener("click", async () => {
     try {
       await deleteJSON(`/api/ratings/${item.film_id}`);
@@ -39,6 +42,7 @@ async function load() {
   const q = search.value.trim();
   const data = await getJSON(`/api/ratings${q ? `?q=${encodeURIComponent(q)}` : ""}`);
   body.replaceChildren(...data.items.map(row));
+  if (data.items.length) setAmbient(data.items[0].poster_url);
   if (!q) count.textContent = String(data.total);
 }
 

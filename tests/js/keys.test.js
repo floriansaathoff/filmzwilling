@@ -26,6 +26,12 @@ test("space, s and backspace", () => {
   assert.deepEqual(keyToAction(ev("Backspace")), { type: "undo" });
 });
 
+test("t opens the trailer", () => {
+  assert.deepEqual(keyToAction(ev("t")), { type: "trailer" });
+  assert.deepEqual(keyToAction(ev("T")), { type: "trailer" });
+  assert.equal(keyToAction(ev("t", { target: { tagName: "INPUT", type: "search" } })), null);
+});
+
 test("other keys and modifiers are ignored", () => {
   assert.equal(keyToAction(ev("a")), null);
   assert.equal(keyToAction(ev("Enter")), null);

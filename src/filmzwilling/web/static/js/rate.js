@@ -1,7 +1,10 @@
-// Rating page: optimistic UI, keyboard shortcuts, retry queue and poster preloading.
-import { getJSON, postJSON, toast } from "./api.js";
+// Rating page: Abyss spotlight, optimistic UI, keyboard and controller shortcuts, retry queue,
+// poster/backdrop preloading and the trailer player.
+import { el, formatNumber, getJSON, postJSON, toast } from "./api.js";
 import { keyToAction } from "./keys.js";
+import { isPlayerOpen, openTrailer } from "./player.js";
 import { Preloader, RatingSession, RetryQueue } from "./queue.js";
+import { fadeImage, icon, loadMedia, preloadImage, setAmbient } from "./ui.js";
 
 const $ = (id) => document.getElementById(id);
 const card = $("card");
@@ -68,23 +71,51 @@ function renderProgress() {
   $("progress-fill").style.width = `${done}%`;
 }
 
+function metaPill(name, text) {
+  return el("span", { class: "meta-pill" }, name ? icon(name) : null, text);
+}
+
+const trailerBtn = $("trailer-btn");
+const trailerText = trailerBtn.querySelector("span");
+const backdropBox = $("spot-backdrop");
+
+function showMedia(item, media) {
+  if (session.current !== item) return;
+  const backdrop = media && media.backdrop_url;
+  backdropBox.classList.toggle("from-poster", !backdrop);
+  fadeImage($("backdrop-img"), backdrop || item.poster_url);
+  setAmbient(backdrop || item.poster_url);
+  $("film-overview").textContent = (media && media.overview) || "";
+  const count = media ? media.trailers.length : 0;
+  trailerBtn.classList.toggle("unavailable", Boolean(media) && count === 0);
+  trailerBtn.title = !media ? "" : count ? "Trailer abspielen (T / Y)" : media.online ? "Kein Trailer gefunden" : "Trailer brauchen TMDB";
+  trailerText.textContent = media && count === 0 ? "Kein Trailer" : "Trailer";
+}
+
 function render() {
   const item = session.current;
   if (!item) {
     card.hidden = true;
     empty.hidden = false;
+    $("rate-dock").hidden = true;
     return;
   }
   card.hidden = false;
   empty.hidden = true;
+  $("rate-dock").hidden = false;
   const poster = $("poster");
   const cached = images.get(item.poster_url);
   poster.src = cached && cached.complete ? cached.src : item.poster_url;
   poster.alt = `Poster: ${item.title}`;
   $("film-title").textContent = item.title;
   $("film-original").textContent = item.original_title || "";
-  const meta = [item.year, item.runtime ? `${item.runtime} Min.` : null, (item.genres || []).join(", ")];
-  $("film-meta").textContent = meta.filter(Boolean).join(" · ");
+  const pills = [
+    item.year ? metaPill("movie", String(item.year)) : null,
+    item.runtime ? metaPill("clock", `${Math.floor(item.runtime / 60)}h ${item.runtime % 60}m`) : null,
+    item.vote_average ? metaPill("star", formatNumber(item.vote_average)) : null,
+    ...(item.genres || []).slice(0, 3).map((g) => metaPill(null, g)),
+  ];
+  $("film-meta").replaceChildren(...pills.filter(Boolean));
   const hints = $("film-hints");
   hints.replaceChildren(
     ...(item.hints || []).map((h) => {
@@ -94,7 +125,24 @@ function render() {
       return li;
     }),
   );
+  const tmdb = $("tmdb-link");
+  tmdb.hidden = !item.tmdb_url;
+  if (item.tmdb_url) tmdb.href = item.tmdb_url;
   scoreButtons.forEach((b) => b.classList.toggle("low", Boolean(item.highlight_low) && Number(b.dataset.score) <= 4));
+  showMedia(item, null);
+  loadMedia(item.film_id).then((media) => showMedia(item, media));
+  // Warm up backdrops of the next films so that switching stays instant.
+  for (const next of session.upcoming.slice(0, 2)) {
+    loadMedia(next.film_id).then((m) => preloadImage(m && m.backdrop_url));
+  }
+}
+
+function pressFeedback(score) {
+  const button = scoreButtons[score];
+  if (!button) return;
+  button.classList.remove("pressed");
+  void button.offsetWidth;
+  button.classList.add("pressed");
 }
 
 function adjust(type, sign) {
@@ -105,6 +153,7 @@ function adjust(type, sign) {
 }
 
 function act(type, score) {
+  if (type === "rate") pressFeedback(score);
   const record = session.act(type, type === "rate" ? { score } : {});
   if (!record) return;
   render();
@@ -136,17 +185,35 @@ async function undo() {
   }
 }
 
+function trailer() {
+  const item = session.current;
+  if (item) openTrailer(item);
+}
+
 function handle(action) {
-  if (action.type === "rate") act("rate", action.score);
+  if (action.type === "trailer") trailer();
+  else if (action.type === "rate") act("rate", action.score);
   else if (action.type === "undo") undo();
   else act(action.type);
 }
 
 document.addEventListener("keydown", (event) => {
+  if (isPlayerOpen()) return;
   const action = keyToAction(event);
   if (!action) return;
   event.preventDefault();
   if (event.repeat && action.type !== "undo") return;
+  handle(action);
+});
+
+trailerBtn.addEventListener("click", trailer);
+
+// Controller: the D-pad moves over the score buttons (A rates via click), X/Y/B/RT are shortcuts.
+const PAD_ACTIONS = { x: { type: "not_seen" }, y: { type: "trailer" }, b: { type: "undo" }, rt: { type: "later" } };
+document.addEventListener("fz:pad", (event) => {
+  const action = PAD_ACTIONS[event.detail.button];
+  if (!action || card.hidden) return;
+  event.preventDefault();
   handle(action);
 });
 

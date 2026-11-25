@@ -1,14 +1,23 @@
 {% extends "base.html" %}
+{% from "_macros.html" import icon %}
 {% block title %}Empfehlungen{% endblock %}
 {% block content %}
 <section class="recs" id="recs-app"
   data-default-providers="{{ default_providers | join(',') }}"
   data-min-ratings="{{ min_ratings }}" data-rating-count="{{ rating_count }}">
-  <div class="page-head">
-    <h1>Empfehlungen</h1>
+  <div class="hero spotlight" id="spotlight" hidden>
+    <div class="spot-backdrop" aria-hidden="true"><img id="hero-backdrop" alt=""></div>
+    <div class="spot-content" id="hero-content"></div>
+    <div class="carousel-dots" id="hero-dots" role="tablist" aria-label="Top-Empfehlungen"></div>
+  </div>
+
+  <div class="toolbar">
+    <h1 class="toolbar-title">Empfehlungen</h1>
+    <span class="muted" id="recs-count"></span>
     <div class="head-actions">
-      <button type="button" id="recompute">Empfehlungen neu berechnen</button>
-      <button type="button" id="refresh-availability" class="secondary">Verfügbarkeit aktualisieren</button>
+      <button type="button" class="icon-btn" id="toggle-filters" aria-expanded="false" aria-controls="filters" title="Filter">{{ icon("tune") }}<span>Filter</span></button>
+      <button type="button" class="icon-btn" id="recompute" title="Empfehlungen neu berechnen">{{ icon("refresh") }}<span>Empfehlungen neu berechnen</span></button>
+      <button type="button" id="refresh-availability" class="icon-btn secondary" title="Verfügbarkeit aktualisieren">{{ icon("movie") }}<span>Verfügbarkeit aktualisieren</span></button>
     </div>
   </div>
   {% if not has_data %}
@@ -16,9 +25,9 @@
   {% elif rating_count < min_ratings %}
   <p class="notice" id="too-few">Bewerte mindestens {{ min_ratings }} Filme, dann erscheinen hier Empfehlungen. Bisher: {{ rating_count }}. <a href="/">Jetzt bewerten</a></p>
   {% endif %}
-  <p class="muted" id="recs-meta">{% if meta %}Berechnet am {{ meta.computed_at[:16].replace('T', ' ') }} aus {{ meta.rating_count }} Bewertungen, {{ meta.n_twins }} Zwillinge.{% endif %}</p>
+  <p class="muted meta-line" id="recs-meta">{% if meta %}Berechnet am {{ meta.computed_at[:16].replace('T', ' ') }} aus {{ meta.rating_count }} Bewertungen, {{ meta.n_twins }} Zwillinge.{% endif %}</p>
 
-  <form class="filters" id="filters">
+  <form class="filters glass-panel" id="filters" hidden>
     <fieldset class="filter-group providers">
       <legend>Anbieter</legend>
       <label class="check"><input type="checkbox" name="providers_any" id="providers-any"> alle (auch ohne Anbieterdaten)</label>
@@ -60,12 +69,11 @@
     </fieldset>
   </form>
 
-  <p class="muted" id="recs-count"></p>
   <div class="grid" id="recs-grid" aria-live="polite"></div>
 
   <h2 class="section-title">Neu seit Ende 2023 (ohne Zwillingsdaten)</h2>
   <p class="notice subtle">Diese Filme sind nicht personalisiert: Für sie gibt es noch keine MovieLens-Bewertungen. Sortiert nach TMDB-Note, mit denselben Filtern.</p>
-  <div class="head-actions"><button type="button" id="refresh-new" class="secondary">Neuerscheinungen laden</button></div>
+  <div class="head-actions"><button type="button" id="refresh-new" class="icon-btn secondary">{{ icon("refresh") }}<span>Neuerscheinungen laden</span></button></div>
   <div class="grid" id="new-grid"></div>
 </section>
 {% endblock %}
