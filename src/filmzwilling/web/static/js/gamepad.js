@@ -113,6 +113,7 @@ const HELP = [
   ["Y", "Trailer abspielen"],
   ["RT", "Später (Bewerten)"],
   ["LB / RB", "Vorherige / nächste Seite"],
+  ["Start", "Filter öffnen/schließen (Empfehlungen); X setzt sie zurück"],
   ["Rechter Stick", "Scrollen"],
   ["Im Trailer", "A Pause · ←/→ 10 s · LT/RT 30 s · ↑/↓ Lautstärke · X Ton · Y Vollbild · LB/RB Trailer wechseln · B schließen"],
   ["Select / View", "Diese Hilfe"],

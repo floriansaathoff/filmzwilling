@@ -237,6 +237,7 @@ Controller-Symbol.
 | Y (Dreieck) | Trailer |
 | RT | später |
 | LB / RB | vorherige / nächste Seite |
+| Start | Filter öffnen/schließen (Empfehlungen), X setzt sie zurück |
 | rechter Stick | scrollen |
 | Select / View | Hilfe mit der Belegung |
 
@@ -252,7 +253,9 @@ Berechnung dauert mit dem vollen Datensatz etwa 2 Sekunden.
 Oben laufen die fünf besten Empfehlungen als großes Banner durch. Jede Kachel zeigt das Poster
 mit der vorhergesagten Note (zum Beispiel „8,7“) und den Anbietern, darunter Titel, Jahr,
 Laufzeit und wie viele Zwillinge den Film bewertet haben. Ein Klick öffnet die Detailansicht mit
-Handlung, Trailer, Bewerten und „Kein Interesse“. Die Filter öffnest du mit „Filter“. Filter (Anbieter, Genres mit
+Handlung, Trailer, Bewerten und „Kein Interesse“. Die Filter öffnest du mit „Filter“ (am Controller mit Start). Anbieter, Genres und Sortierung sind
+große Schaltflächen zum Antippen, die Zahlenfilter haben −/+ Knöpfe (leer heißt „egal“, der erste
+Druck springt auf einen sinnvollen Startwert, unter dem Minimum wird das Feld wieder leer). Filter (Anbieter, Genres mit
 ODER oder UND, Mindest-Match, Mindestzahl Zwillinge, Jahr, Laufzeit, Leihen und Kaufen) stehen in
 der URL, ein Lesezeichen behält sie. Ein Tipp: Mit „Mindestens Zwillinge“ 20 verschwinden
 Exoten, die nur wenige Leute gesehen haben.

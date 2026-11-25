@@ -15,7 +15,7 @@
     <h1 class="toolbar-title">Empfehlungen</h1>
     <span class="muted" id="recs-count"></span>
     <div class="head-actions">
-      <button type="button" class="icon-btn" id="toggle-filters" aria-expanded="false" aria-controls="filters" title="Filter">{{ icon("tune") }}<span>Filter</span></button>
+      <button type="button" class="icon-btn" id="toggle-filters" aria-expanded="false" aria-controls="filters" title="Filter (Start am Controller)">{{ icon("tune") }}<span>Filter</span> <kbd class="pad">Start</kbd></button>
       <button type="button" class="icon-btn" id="recompute" title="Empfehlungen neu berechnen">{{ icon("refresh") }}<span>Empfehlungen neu berechnen</span></button>
       <button type="button" id="refresh-availability" class="icon-btn secondary" title="Verfügbarkeit aktualisieren">{{ icon("movie") }}<span>Verfügbarkeit aktualisieren</span></button>
     </div>
@@ -28,45 +28,62 @@
   <p class="muted meta-line" id="recs-meta">{% if meta %}Berechnet am {{ meta.computed_at[:16].replace('T', ' ') }} aus {{ meta.rating_count }} Bewertungen, {{ meta.n_twins }} Zwillinge.{% endif %}</p>
 
   <form class="filters glass-panel" id="filters" hidden>
-    <fieldset class="filter-group providers">
-      <legend>Anbieter</legend>
-      <label class="check"><input type="checkbox" name="providers_any" id="providers-any"> alle (auch ohne Anbieterdaten)</label>
-      {% macro provider_box(p) %}<label class="check provider"><input type="checkbox" name="providers" value="{{ p.id }}">{% if p.logo_url %}<img src="{{ p.logo_url }}" alt="" loading="lazy">{% endif %}{{ p.name }}</label>{% endmacro %}
-      <div class="provider-list">
-        {% for p in my_providers %}{{ provider_box(p) }}{% endfor %}
+    {% macro chip(name, value, label, logo=None, id=None) %}<label class="chip-toggle"><input type="checkbox" name="{{ name }}" value="{{ value }}"{% if id %} id="{{ id }}"{% endif %}><span class="chip-face">{% if logo %}<img src="{{ logo }}" alt="" loading="lazy">{% endif %}{{ label }}</span></label>{% endmacro %}
+    {% macro stepper(name, label, step, start, min, max, unit="") %}
+    <div class="stepper" data-step="{{ step }}" data-start="{{ start }}" data-min="{{ min }}" data-max="{{ max }}">
+      <span class="stepper-label">{{ label }}</span>
+      <div class="stepper-row">
+        <button type="button" class="step-btn" data-dir="-1" aria-label="{{ label }} verringern">{{ icon("remove") }}</button>
+        <input type="number" name="{{ name }}" min="{{ min }}" max="{{ max }}" step="any" inputmode="decimal" placeholder="egal" aria-label="{{ label }}">
+        <button type="button" class="step-btn" data-dir="1" aria-label="{{ label }} erhöhen">{{ icon("add") }}</button>
+      </div>
+    </div>
+    {% endmacro %}
+    <section class="filter-section">
+      <h3>Anbieter</h3>
+      <div class="chip-row">
+        {{ chip("providers_any", "1", "Alle, auch ohne Anbieterdaten", id="providers-any") }}
+        {% for p in my_providers %}{{ chip("providers", p.id, p.name, p.logo_url) }}{% endfor %}
       </div>
       {% if other_providers %}
       <details class="more-providers">
-        <summary>Weitere Anbieter ({{ other_providers | length }})</summary>
-        <div class="provider-list">
-          {% for p in other_providers %}{{ provider_box(p) }}{% endfor %}
+        <summary class="chip-face">Weitere Anbieter ({{ other_providers | length }})</summary>
+        <div class="chip-row">
+          {% for p in other_providers %}{{ chip("providers", p.id, p.name, p.logo_url) }}{% endfor %}
         </div>
       </details>
       {% endif %}
-      <label class="check"><input type="checkbox" name="rent_buy" value="1"> Leihen und Kaufen zeigen</label>
-    </fieldset>
-    <fieldset class="filter-group">
-      <legend>Genres</legend>
-      <div class="genre-list">
-        {% for g in genres %}<label class="check"><input type="checkbox" name="genres" value="{{ g }}">{{ g }}</label>{% endfor %}
+      <div class="chip-row">{{ chip("rent_buy", "1", "Leihen und Kaufen zeigen") }}</div>
+    </section>
+    <section class="filter-section">
+      <h3>Genres</h3>
+      <div class="chip-row">
+        {% for g in genres %}{{ chip("genres", g, g) }}{% endfor %}
       </div>
-      <label class="check"><input type="checkbox" name="genre_mode" value="and"> alle gewählten Genres (UND)</label>
-    </fieldset>
-    <fieldset class="filter-group numbers">
-      <legend>Weitere Filter</legend>
-      <label>Mindest-Match <input type="number" name="min_score" min="0" max="10" step="0.1" inputmode="decimal"></label>
-      <label>Mindestens Zwillinge <input type="number" name="min_support" min="0" step="1"></label>
-      <label>Jahr von <input type="number" name="year_from" min="1900" max="2100"></label>
-      <label>bis <input type="number" name="year_to" min="1900" max="2100"></label>
-      <label>max. Laufzeit (Min.) <input type="number" name="max_runtime" min="0" step="5"></label>
-      <label>Sortierung
-        <select name="sort">
-          <option value="match">Match</option>
-          <option value="year">Jahr</option>
-          <option value="tmdb">TMDB-Note</option>
-        </select>
-      </label>
-    </fieldset>
+      <div class="chip-row">{{ chip("genre_mode", "and", "Alle gewählten Genres (UND)") }}</div>
+    </section>
+    <section class="filter-section">
+      <h3>Weitere Filter</h3>
+      <div class="stepper-grid">
+        {{ stepper("min_score", "Mindest-Match", 0.5, 6, 0, 10) }}
+        {{ stepper("min_support", "Mindestens Zwillinge", 5, 10, 0, 500) }}
+        {{ stepper("year_from", "Jahr von", 5, 1990, 1900, 2100) }}
+        {{ stepper("year_to", "Jahr bis", 5, 2025, 1900, 2100) }}
+        {{ stepper("max_runtime", "Max. Laufzeit (Min.)", 15, 120, 0, 600) }}
+      </div>
+    </section>
+    <section class="filter-section">
+      <h3>Sortierung</h3>
+      <div class="segmented" role="radiogroup" aria-label="Sortierung">
+        <label class="chip-toggle"><input type="radio" name="sort" value="match" checked><span class="chip-face">Match</span></label>
+        <label class="chip-toggle"><input type="radio" name="sort" value="year"><span class="chip-face">Jahr</span></label>
+        <label class="chip-toggle"><input type="radio" name="sort" value="tmdb"><span class="chip-face">TMDB-Note</span></label>
+      </div>
+    </section>
+    <div class="filter-actions">
+      <button type="button" class="secondary" id="reset-filters">{{ icon("refresh") }}<span>Zurücksetzen</span> <kbd class="pad">X</kbd></button>
+      <button type="button" id="close-filters">{{ icon("check") }}<span>Fertig</span> <kbd class="pad">B</kbd></button>
+    </div>
   </form>
 
   <div class="grid" id="recs-grid" aria-live="polite"></div>

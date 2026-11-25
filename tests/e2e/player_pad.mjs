@@ -138,6 +138,26 @@ try {
   // RB switches to the next page.
   await press("rb").catch(() => {}); // the page navigates away while the press is running
   await page.waitForURL(base + "/empfehlungen");
+  // Filters with the controller: Start opens them, steppers work with A, X resets, B closes.
+  await page.waitForSelector("#pad-indicator:not([hidden])");
+  await press("start");
+  await page.waitForSelector("#filters:not([hidden])");
+  if (!(await page.evaluate(() => document.getElementById("filters").contains(document.activeElement)))) {
+    throw new Error("Start did not move the focus into the filters");
+  }
+  await press("a");
+  if (!(await page.evaluate(() => document.getElementById("providers-any").checked))) throw new Error("A did not toggle the chip");
+  await page.focus('.stepper:first-child [data-dir="1"]');
+  await press("a");
+  await press("a");
+  const minScore = await page.inputValue('input[name="min_score"]');
+  if (minScore !== "6.5") throw new Error("stepper: expected 6.5, got " + minScore);
+  await page.waitForFunction(() => location.search.includes("min_score=6.5"));
+  if (shotDir) await page.screenshot({ path: `${shotDir}/filters-pad.png` });
+  await press("x");
+  await page.waitForFunction(() => document.querySelector('input[name="min_score"]').value === "");
+  await press("b");
+  await page.waitForSelector("#filters", { state: "hidden" });
   if (errors.length) throw new Error("page errors: " + errors.join("; "));
   console.log(JSON.stringify({ ok: true }));
 } finally {

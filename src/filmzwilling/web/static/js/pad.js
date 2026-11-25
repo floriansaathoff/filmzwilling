@@ -99,3 +99,17 @@ export function pickNeighbor(from, candidates, dir) {
   });
   return best;
 }
+
+/**
+ * Next value of a controller-friendly number stepper. Empty means "no filter": the first step in
+ * either direction jumps to `start`; stepping below `min` clears the field again.
+ * @returns {string} new input value ("" for no filter)
+ */
+export function stepNumber(value, dir, { step, start, min, max }) {
+  const text = String(value ?? "").trim().replace(",", ".");
+  if (text === "" || Number.isNaN(Number(text))) return String(start);
+  const decimals = (String(step).split(".")[1] || "").length;
+  const next = Number((Number(text) + dir * step).toFixed(decimals));
+  if (next < min) return "";
+  return String(Math.min(max, next));
+}
