@@ -308,6 +308,13 @@ def create_app(service: FilmService) -> FastAPI:
         await service.refresh_providers()
         return {"updated": await service.refresh_availability()}
 
+    @app.get("/api/films/{film_id}/media")
+    async def film_media(film_id: int) -> dict[str, Any]:
+        media = await service.film_media(film_id)
+        if media is None:
+            raise not_found()
+        return media
+
     @app.get("/api/twins")
     def twins() -> dict[str, Any]:
         return {"items": service.twins()}

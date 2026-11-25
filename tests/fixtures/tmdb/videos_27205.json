@@ -1,0 +1,11 @@
+{
+  "id": 27205,
+  "results": [
+    {"iso_639_1": "en", "iso_3166_1": "US", "name": "Official Trailer", "key": "YoHD9XEInc0", "site": "YouTube", "size": 1080, "type": "Trailer", "official": true, "published_at": "2010-05-11T19:00:00.000Z", "id": "a1"},
+    {"iso_639_1": "de", "iso_3166_1": "DE", "name": "Inception - Trailer (Deutsch)", "key": "u_ckVuUUeZw", "site": "YouTube", "size": 1080, "type": "Trailer", "official": true, "published_at": "2010-04-01T10:00:00.000Z", "id": "a2"},
+    {"iso_639_1": "de", "iso_3166_1": "DE", "name": "Teaser (Deutsch)", "key": "TEASERde001", "site": "YouTube", "size": 720, "type": "Teaser", "official": true, "published_at": "2009-12-01T10:00:00.000Z", "id": "a3"},
+    {"iso_639_1": "en", "iso_3166_1": "US", "name": "Featurette", "key": "FEATURE0001", "site": "YouTube", "size": 1080, "type": "Featurette", "official": true, "published_at": "2010-06-01T10:00:00.000Z", "id": "a4"},
+    {"iso_639_1": "en", "iso_3166_1": "US", "name": "Vimeo trailer", "key": "12345", "site": "Vimeo", "size": 1080, "type": "Trailer", "official": true, "published_at": "2010-06-01T10:00:00.000Z", "id": "a5"},
+    {"iso_639_1": "de", "iso_3166_1": "DE", "name": "Fan-Trailer", "key": "FANde000001", "site": "YouTube", "size": 1080, "type": "Trailer", "official": false, "published_at": "2011-01-01T10:00:00.000Z", "id": "a6"}
+  ]
+}

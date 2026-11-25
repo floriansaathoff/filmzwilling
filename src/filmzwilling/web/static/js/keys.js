@@ -19,7 +19,8 @@ export function isEditableTarget(target) {
 
 /**
  * Map a keydown event (or a plain object with key/code/target/modifiers) to an action:
- * {type: "rate", score}, {type: "not_seen"}, {type: "later"}, {type: "undo"} or null.
+ * {type: "rate", score}, {type: "not_seen"}, {type: "later"}, {type: "undo"}, {type: "trailer"}
+ * or null.
  */
 export function keyToAction(event) {
   if (!event || event.ctrlKey || event.metaKey || event.altKey) return null;
@@ -35,5 +36,6 @@ export function keyToAction(event) {
   if (key === " " || key === "Spacebar" || code === "Space") return { type: "not_seen" };
   if (key === "s" || key === "S") return { type: "later" };
   if (key === "Backspace") return { type: "undo" };
+  if (key === "t" || key === "T") return { type: "trailer" };
   return null;
 }

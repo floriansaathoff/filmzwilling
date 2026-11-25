@@ -47,7 +47,16 @@ from filmzwilling.repository import (
     StoredTwin,
 )
 from filmzwilling.scale import from_ml, validate_note
-from filmzwilling.tmdb import MovieDetails, Provider, TMDBClient, poster_url
+from filmzwilling.tmdb import (
+    MovieDetails,
+    Provider,
+    TMDBClient,
+    TMDBError,
+    Video,
+    parse_movie,
+    parse_videos,
+    poster_url,
+)
 
 log = logging.getLogger(__name__)
 
@@ -851,6 +860,59 @@ class FilmService:
                 film_ids.append(self._store_details(item))
         self.repo.save_new_releases(film_ids)
         return len(film_ids)
+
+    async def film_media(self, film_id: int) -> dict[str, Any] | None:
+        """Backdrop, plot and YouTube trailers for the spotlight and the trailer player.
+
+        Online the data comes from TMDB (cached); offline only from what is already cached.
+        TMDB errors are swallowed: a missing trailer must never break the page.
+        """
+        film = self.repo.get_film(film_id)
+        if film is None:
+            return None
+        result: dict[str, Any] = {
+            "film_id": film.id,
+            "title": film.display_title,
+            "year": film.display_year,
+            "poster_url": poster_url(film.poster_path, "w500") or f"/poster/{film.id}.svg",
+            "backdrop_url": None,
+            "overview": None,
+            "trailers": [],
+            "online": self.online,
+        }
+        if film.tmdb_id is None:
+            return result
+        details: MovieDetails | None = None
+        videos: list[Video] = []
+        if self.online:
+            try:
+                async with self._client() as client:
+                    details, videos = await asyncio.gather(
+                        client.movie(film.tmdb_id), client.videos(film.tmdb_id)
+                    )
+            except TMDBError as error:
+                log.warning("TMDB media for %s failed: %s", film.tmdb_id, error)
+        if details is None:
+            cached = self.repo.cache_get(f"movie:{film.tmdb_id}")
+            if cached and not cached[0].get("__missing__"):
+                details = parse_movie(cached[0])
+        if not videos:
+            cached = self.repo.cache_get(f"videos:{film.tmdb_id}")
+            videos = parse_videos(cached[0]) if cached else []
+        if details is not None:
+            result["backdrop_url"] = poster_url(details.backdrop_path, "w1280")
+            result["overview"] = details.overview
+        result["trailers"] = [
+            {
+                "key": v.key,
+                "name": v.name,
+                "language": v.language,
+                "type": v.type,
+                "official": v.official,
+            }
+            for v in videos[:8]
+        ]
+        return result
 
     async def search_tmdb(self, query: str, year: int | None = None) -> list[dict[str, Any]]:
         async with self._client() as client:

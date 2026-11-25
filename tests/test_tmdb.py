@@ -411,3 +411,43 @@ def test_movies_concurrently(repo: Repository) -> None:
     result = run(go())
     assert set(result) == {27205, 238}
     assert result[238].title == "Der Pate"
+
+
+def test_parse_videos_order() -> None:
+    from filmzwilling.tmdb import parse_videos
+
+    videos = parse_videos(load_json("videos_27205.json"))
+    # Only YouTube trailers and teasers; German official trailer first, fan upload after
+    # official ones, teaser last.
+    assert [v.key for v in videos] == ["u_ckVuUUeZw", "FANde000001", "YoHD9XEInc0", "TEASERde001"]
+    assert videos[0].language == "de" and videos[0].official is True
+    assert parse_videos(None) == []
+    assert parse_videos({"results": [{"site": "YouTube", "type": "Trailer"}]}) == []
+
+
+def test_parse_movie_backdrop_and_overview() -> None:
+    details = parse_movie(load_json("movie_27205.json"))
+    assert details.backdrop_path and details.backdrop_path.startswith("/")
+    assert details.overview
+    empty = parse_movie({"id": 1, "title": "X", "overview": "  "})
+    assert empty.backdrop_path is None and empty.overview is None
+
+
+@respx.mock
+def test_videos_cached(repo: Repository) -> None:
+    route = respx.get(f"{BASE}/movie/27205/videos").mock(
+        return_value=httpx.Response(200, json=load_json("videos_27205.json"))
+    )
+
+    async def go():
+        async with TMDBClient(None, base_url=BASE, cache=repo) as c:
+            first = await c.videos(27205)
+            second = await c.videos(27205)
+            return first, second
+
+    first, second = run(go())
+    assert first == second and first[0].key == "u_ckVuUUeZw"
+    assert route.call_count == 1
+    params = route.calls.last.request.url.params
+    assert params["language"] == "de-DE"
+    assert params["include_video_language"] == "de,en,null"

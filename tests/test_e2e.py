@@ -13,6 +13,7 @@ import pytest
 pytestmark = pytest.mark.e2e
 
 SCRIPT = Path(__file__).parent / "e2e" / "rate_flow.mjs"
+PLAYER_SCRIPT = Path(__file__).parent / "e2e" / "player_pad.mjs"
 
 
 def playwright_available() -> bool:
@@ -33,9 +34,7 @@ def free_port() -> int:
         return int(s.getsockname()[1])
 
 
-def test_keyboard_rating_flow(tmp_path: Path) -> None:
-    if not playwright_available():
-        pytest.skip("Playwright für Node ist nicht installiert")
+def run_against_demo(tmp_path: Path, script: Path) -> dict:
     import uvicorn
 
     from filmzwilling.demo import prepare_demo
@@ -54,15 +53,28 @@ def test_keyboard_rating_flow(tmp_path: Path) -> None:
         time.sleep(0.05)
     try:
         result = subprocess.run(
-            ["node", str(SCRIPT), f"http://127.0.0.1:{port}"],
+            ["node", str(script), f"http://127.0.0.1:{port}"],
             capture_output=True,
             text=True,
             timeout=120,
         )
         assert result.returncode == 0, result.stderr + result.stdout
-        info = json.loads(result.stdout.strip().splitlines()[-1])
+        info: dict = json.loads(result.stdout.strip().splitlines()[-1])
         assert info["ok"] is True
-        assert info["switchMs"] < 1000
+        return info
     finally:
         server.should_exit = True
         thread.join(timeout=10)
+
+
+def test_keyboard_rating_flow(tmp_path: Path) -> None:
+    if not playwright_available():
+        pytest.skip("Playwright für Node ist nicht installiert")
+    info = run_against_demo(tmp_path, SCRIPT)
+    assert info["switchMs"] < 1000
+
+
+def test_trailer_player_and_controller(tmp_path: Path) -> None:
+    if not playwright_available():
+        pytest.skip("Playwright für Node ist nicht installiert")
+    run_against_demo(tmp_path, PLAYER_SCRIPT)

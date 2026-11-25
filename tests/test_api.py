@@ -405,3 +405,38 @@ def test_actions_batch_in_order(client: TestClient) -> None:
         "/api/actions", json={"actions": [{"type": "undo"}] * 3}
     )
     assert empty_undo.json()["results"][-1]["ok"] is False
+
+
+def test_film_media_offline_uses_cache_only(client: TestClient, service: FilmService) -> None:
+    from conftest import load_json
+    from filmzwilling.tmdb import parse_movie
+
+    fid = client.get("/api/queue").json()["items"][0]["film_id"]
+    body = client.get(f"/api/films/{fid}/media").json()
+    assert body["trailers"] == [] and body["backdrop_url"] is None
+    assert body["online"] is False and body["poster_url"]
+    assert client.get("/api/films/999999/media").status_code == 404
+
+    film_id = service.repo.upsert_tmdb_details(parse_movie(load_json("movie_27205.json")))
+    service.repo.cache_put("movie:27205", load_json("movie_27205.json"))
+    service.repo.cache_put("videos:27205", load_json("videos_27205.json"))
+    body = client.get(f"/api/films/{film_id}/media").json()
+    assert body["backdrop_url"].startswith("https://image.tmdb.org/t/p/w1280/")
+    assert body["overview"]
+    assert body["trailers"][0]["key"] == "u_ckVuUUeZw"
+
+
+def test_film_media_online(online_client: TestClient, online_service: FilmService) -> None:
+    from conftest import load_json
+    from filmzwilling.tmdb import parse_movie
+
+    film_id = online_service.repo.upsert_tmdb_details(parse_movie(load_json("movie_27205.json")))
+    body = online_client.get(f"/api/films/{film_id}/media").json()
+    assert body["online"] is True
+    assert [t["key"] for t in body["trailers"]][:2] == ["u_ckVuUUeZw", "FANde000001"]
+    assert body["trailers"][0]["language"] == "de"
+    assert body["backdrop_url"]
+    # A film without videos on TMDB (404) still answers with an empty list.
+    other = online_service.repo.upsert_tmdb_details(parse_movie(load_json("movie_238.json")))
+    body = online_client.get(f"/api/films/{other}/media").json()
+    assert body["trailers"] == []

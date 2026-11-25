@@ -23,6 +23,8 @@ OFFER_CATEGORIES = ("flatrate", "free", "ads", "rent", "buy")
 META_TTL = timedelta(days=30)
 PROVIDER_TTL = timedelta(days=7)
 SEARCH_TTL = timedelta(days=30)
+VIDEO_TTL = timedelta(days=14)
+VIDEO_LANGUAGES = "de,en,null"
 LANGUAGE = "de-DE"
 REGION = "DE"
 MAX_BACKOFF = 30.0
@@ -98,6 +100,8 @@ class MovieDetails:
     popularity: float | None = None
     imdb_id: str | None = None
     offers: list[ProviderOffer] | None = field(default=None)
+    backdrop_path: str | None = None
+    overview: str | None = None
 
     @property
     def year(self) -> int | None:
@@ -149,7 +153,58 @@ def parse_movie(payload: dict[str, Any], region: str = REGION) -> MovieDetails:
         popularity=payload.get("popularity"),
         imdb_id=payload.get("imdb_id"),
         offers=parse_offers(providers, region) if "watch/providers" in payload else None,
+        backdrop_path=payload.get("backdrop_path") or None,
+        overview=(str(payload.get("overview") or "").strip() or None),
     )
+
+
+@dataclass(frozen=True)
+class Video:
+    """A YouTube trailer or teaser from /movie/{id}/videos."""
+
+    key: str
+    name: str
+    language: str | None
+    type: str
+    official: bool = False
+    size: int = 0
+    published_at: str | None = None
+
+
+VIDEO_TYPE_RANK = {"Trailer": 0, "Teaser": 1}
+
+
+def parse_videos(payload: dict[str, Any] | None, prefer_language: str = "de") -> list[Video]:
+    """YouTube trailers and teasers, best first: trailer before teaser, German before other
+    languages, official before fan uploads, larger resolution and newer first."""
+    videos: list[Video] = []
+    for item in (payload or {}).get("results") or []:
+        if str(item.get("site") or "") != "YouTube" or not item.get("key"):
+            continue
+        kind = str(item.get("type") or "")
+        if kind not in VIDEO_TYPE_RANK:
+            continue
+        videos.append(
+            Video(
+                key=str(item["key"]),
+                name=str(item.get("name") or kind),
+                language=item.get("iso_639_1") or None,
+                type=kind,
+                official=bool(item.get("official")),
+                size=int(item.get("size") or 0),
+                published_at=item.get("published_at") or None,
+            )
+        )
+    videos.sort(key=lambda v: v.published_at or "", reverse=True)
+    videos.sort(
+        key=lambda v: (
+            VIDEO_TYPE_RANK[v.type],
+            v.language != prefer_language,
+            not v.official,
+            -v.size,
+        )
+    )
+    return videos
 
 
 def parse_search_results(payload: dict[str, Any]) -> list[SearchResult]:
@@ -355,6 +410,17 @@ class TMDBClient:
             payload = await self.get_json(f"/movie/{tmdb_id}/watch/providers") or {"results": {}}
             self._store(key, payload)
         return parse_offers(payload)
+
+    async def videos(self, tmdb_id: int, *, force: bool = False) -> list[Video]:
+        key = f"videos:{tmdb_id}"
+        payload = None if force else self._cached(key, VIDEO_TTL)
+        if payload is None:
+            payload = await self.get_json(
+                f"/movie/{tmdb_id}/videos",
+                {"language": LANGUAGE, "include_video_language": VIDEO_LANGUAGES},
+            ) or {"results": []}
+            self._store(key, payload)
+        return parse_videos(payload)
 
     async def search_movie(self, query: str, year: int | None = None) -> list[SearchResult]:
         key = f"search:{query.strip().lower()}|{year or ''}"

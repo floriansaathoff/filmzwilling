@@ -1,29 +1,37 @@
-<!doctype html>
+{% from "_macros.html" import icon %}<!doctype html>
 <html lang="de">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#0f1115">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#000000">
   <title>{% block title %}Filmzwilling{% endblock %} · Filmzwilling</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&display=swap">
   <link rel="stylesheet" href="/static/css/app.css?v={{ version }}">
   <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
 </head>
 <body data-page="{{ active }}">
+  <div class="ambient" id="ambient" aria-hidden="true"><img alt="" id="ambient-img"></div>
   <header class="topbar">
-    <a class="brand" href="/">Film<span>zwilling</span></a>
-    <nav class="nav" aria-label="Hauptnavigation">
+    <a class="brand" href="/" aria-label="Filmzwilling, zur Bewertung">{{ icon("twins") }}<span>Filmzwilling</span></a>
+    <nav class="tabs" aria-label="Hauptnavigation">
       {% for href, label, key in nav %}
-      <a href="{{ href }}" class="{{ 'active' if key == active else '' }}"{% if key == active %} aria-current="page"{% endif %}>{{ label }}</a>
+      <a href="{{ href }}" class="tab{{ ' active' if key == active else '' }}"{% if key == active %} aria-current="page"{% endif %}>{{ label }}</a>
       {% endfor %}
     </nav>
+    <div class="topbar-right">
+      <button type="button" class="icon-btn pad-indicator" id="pad-indicator" hidden title="Controller verbunden: Hilfe mit Select/View" aria-label="Controller-Hilfe">{{ icon("gamepad") }}</button>
+    </div>
   </header>
-  <main class="main">
+  <main class="main main-{{ active }}">
     {% block content %}{% endblock %}
   </main>
   <footer class="footer">
     <p>{{ footer }}</p>
-    <p class="muted">Bewertungsdaten: MovieLens 32M (GroupLens), nur zur persönlichen Nutzung.</p>
+    <p class="muted">Bewertungsdaten: MovieLens 32M (GroupLens), nur zur persönlichen Nutzung. Design nach <a href="https://github.com/AumGupta/abyss-jellyfin" rel="noopener">Abyss</a> von Om Gupta (MIT).</p>
   </footer>
+  <script type="module" src="/static/js/shell.js?v={{ version }}"></script>
   {% block scripts %}{% endblock %}
 </body>
 </html>
