@@ -164,3 +164,37 @@ def test_roundtrip() -> None:
     assert params["providers"] == "8,9"
     assert parse_filter(params, default_providers=[]) == f
     assert filter_to_params(RecFilter())["providers"] == "any"
+
+
+def test_exclude_genres() -> None:
+    f = RecFilter(exclude_genres=("Drama",))
+    assert ids(apply_filters(ITEMS, f)) == [5, 3, 6]
+    f = RecFilter(exclude_genres=("drama", "Science Fiction"))
+    assert ids(apply_filters(ITEMS, f)) == [5, 3]
+    # Exclusion wins over inclusion.
+    f = RecFilter(genres=("Krimi", "Western"), exclude_genres=("Drama",))
+    assert ids(apply_filters(ITEMS, f)) == [5]
+
+
+def test_parse_exclude_genres_defaults_and_override() -> None:
+    assert parse_filter({}, default_providers=[]).exclude_genres == ()
+    f = parse_filter({}, default_providers=[], default_exclude_genres=["Horror", "Western"])
+    assert f.exclude_genres == ("Horror", "Western")
+    f = parse_filter(
+        {"exclude_genres": "Drama"}, default_providers=[], default_exclude_genres=["Horror"]
+    )
+    assert f.exclude_genres == ("Drama",)
+    f = parse_filter({"exclude_genres": ""}, default_providers=[], default_exclude_genres=["X"])
+    assert f.exclude_genres == ()
+
+
+def test_roundtrip_exclude_genres() -> None:
+    f = RecFilter(providers=None, exclude_genres=("Horror", "Western"))
+    params = filter_to_params(f)
+    assert params["exclude_genres"] == "Horror,Western"
+    assert parse_filter(params, default_providers=[], default_exclude_genres=["Drama"]) == f
+    # An empty exclusion is written out, so saved defaults do not sneak back in.
+    params = filter_to_params(RecFilter())
+    assert params["exclude_genres"] == ""
+    restored = parse_filter(params, default_providers=[], default_exclude_genres=["Drama"])
+    assert restored == RecFilter()

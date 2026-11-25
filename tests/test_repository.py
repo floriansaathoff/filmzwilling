@@ -68,6 +68,10 @@ def test_user_settings_defaults_and_update(repo: Repository) -> None:
     assert s.queue_size == 200
     with pytest.raises(ValueError):
         repo.update_user_settings(queue_size=-1)
+    assert s.excluded_genres == []
+    s = repo.update_user_settings(excluded_genres=["Horror", "Western"])
+    assert s.excluded_genres == ["Horror", "Western"]
+    assert s.queue_size == 200
 
 
 def test_movielens_films_and_display(repo: Repository) -> None:

@@ -257,7 +257,9 @@ Handlung, Trailer, Bewerten und „Kein Interesse“. Die Filter öffnest du mit
 große Schaltflächen zum Antippen, die Zahlenfilter haben −/+ Knöpfe (leer heißt „egal“, der erste
 Druck springt auf einen sinnvollen Startwert, unter dem Minimum wird das Feld wieder leer). Filter (Anbieter, Genres mit
 ODER oder UND, Mindest-Match, Mindestzahl Zwillinge, Jahr, Laufzeit, Leihen und Kaufen) stehen in
-der URL, ein Lesezeichen behält sie. Ein Tipp: Mit „Mindestens Zwillinge“ 20 verschwinden
+der URL, ein Lesezeichen behält sie. Unter „Genres ausschließen“ fliegen Filme mit einem der
+gewählten Genres raus, auch wenn sie ein gewünschtes Genre haben. Genres, die du nie sehen willst,
+trägst du unter Einstellungen ein; sie sind dann auf der Empfehlungsseite vorausgewählt. Ein Tipp: Mit „Mindestens Zwillinge“ 20 verschwinden
 Exoten, die nur wenige Leute gesehen haben.
 
 Unter „Zwillinge“ führt jede Karte zur Seite dieses Zwillings: alle seine MovieLens-Bewertungen

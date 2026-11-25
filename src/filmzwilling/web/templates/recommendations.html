@@ -4,6 +4,7 @@
 {% block content %}
 <section class="recs" id="recs-app"
   data-default-providers="{{ default_providers | join(',') }}"
+  data-default-exclude-genres="{{ excluded_genres | join(',') }}"
   data-min-ratings="{{ min_ratings }}" data-rating-count="{{ rating_count }}">
   <div class="hero spotlight" id="spotlight" hidden>
     <div class="spot-backdrop" aria-hidden="true"><img id="hero-backdrop" alt=""></div>
@@ -61,6 +62,13 @@
         {% for g in genres %}{{ chip("genres", g, g) }}{% endfor %}
       </div>
       <div class="chip-row">{{ chip("genre_mode", "and", "Alle gewählten Genres (UND)") }}</div>
+    </section>
+    <section class="filter-section">
+      <h3>Genres ausschließen</h3>
+      <div class="chip-row">
+        {% for g in genres %}{{ chip("exclude_genres", g, g) }}{% endfor %}
+      </div>
+      <p class="muted">Dauerhaft ausschließen unter <a href="/einstellungen">Einstellungen</a>.</p>
     </section>
     <section class="filter-section">
       <h3>Weitere Filter</h3>
