@@ -429,7 +429,10 @@ function setGenre(dir) {
   cloud.refreshAlpha();
   renderer.upload("alpha", cloud.alpha);
   renderGroups();
-  if (selected >= 0 && !cloud.visible(selected)) select(-1);
+  if (selected >= 0 && !cloud.visible(selected)) {
+    select(-1);
+    camera.focus([0, 0, 0]);
+  }
 }
 
 function setSpin(on) {
